@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- r2r-build:b8ed8e3733ed4673 -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marine Electricals Deep Dive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#04080f;--panel:#0a1220;--border:#17233b;--accent:#f0a500;
+  --text:#e8edf6;--muted:#8a94a6;--faint:#5a6577;
+  --red:#ff5964;--green:#37d39b;--blue:#5aa9ff;--purple:#b48cff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.6;overflow-x:hidden}
+nav{position:sticky;top:0;z-index:100;background:rgba(4,8,15,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.tabs{display:flex;overflow-x:auto;scrollbar-width:none;padding:0 8px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;background:none;border:none;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.04em;text-transform:uppercase;padding:14px 12px 12px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+header{padding:22px 16px 8px;max-width:1100px;margin:0 auto}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);letter-spacing:.08em;text-transform:uppercase}
+h1{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;line-height:1.15;margin:6px 0 10px}
+h2{font-family:'Syne',sans-serif;font-weight:700;font-size:22px;margin-bottom:4px}
+h3{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin-bottom:8px}
+.sub{color:var(--muted);font-size:14px;margin-bottom:16px}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+.badge{font-family:'JetBrains Mono',monospace;font-size:11px;padding:5px 10px;border-radius:999px;border:1px solid}
+.b-amber{color:var(--accent);border-color:rgba(240,165,0,.4);background:rgba(240,165,0,.08)}
+.b-green{color:var(--green);border-color:rgba(55,211,155,.4);background:rgba(55,211,155,.08)}
+.b-red{color:var(--red);border-color:rgba(255,89,100,.4);background:rgba(255,89,100,.08)}
+.b-blue{color:var(--blue);border-color:rgba(90,169,255,.4);background:rgba(90,169,255,.08)}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:12px 16px 4px;max-width:1100px;margin:0 auto}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px}
+.kpi .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-family:'JetBrains Mono',monospace}
+.kpi .v{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;margin-top:2px}
+.kpi .n{font-size:12px;color:var(--faint)}
+main{max-width:1100px;margin:0 auto;padding:16px 16px 60px}
+.panel{display:none}
+.panel.active{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px}
+.card p+p{margin-top:8px}
+.card ul{padding-left:18px}
+.card li{margin-bottom:8px}
+.callout{border-left:4px solid var(--accent);background:rgba(240,165,0,.07);border-radius:0 12px 12px 0;padding:14px 16px;margin-bottom:14px}
+.callout.red{border-color:var(--red);background:rgba(255,89,100,.07)}
+.callout.green{border-color:var(--green);background:rgba(55,211,155,.07)}
+.callout b{color:var(--text)}
+.grid2{display:grid;grid-template-columns:1fr;gap:14px}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:520px;font-family:'JetBrains Mono',monospace;font-size:12.5px}
+th,td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+tr.hl td{color:var(--accent)}
+.pos{color:var(--green)}.neg{color:var(--red)}.mut{color:var(--muted)}
+.src{font-size:11.5px;color:var(--faint);margin-top:8px;font-family:'JetBrains Mono',monospace}
+.chart-box{position:relative;height:260px}
+.tag{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:2px 8px;border-radius:6px;margin-right:6px;vertical-align:middle}
+.t-red{background:rgba(255,89,100,.12);color:var(--red)}
+.t-blue{background:rgba(90,169,255,.12);color:var(--blue)}
+.t-purple{background:rgba(180,140,255,.12);color:var(--purple)}
+.t-green{background:rgba(55,211,155,.12);color:var(--green)}
+.t-amber{background:rgba(240,165,0,.12);color:var(--accent)}
+.risk{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.risk:last-child{border-bottom:none}
+.risk .num{font-family:'JetBrains Mono',monospace;color:var(--red);font-weight:600;min-width:22px}
+.ladder{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-family:'JetBrains Mono',monospace;font-size:12px}
+.step{padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:#0d1729}
+.step.now{border-color:var(--accent);color:var(--accent)}
+.arrow{color:var(--faint)}
+.watch{display:grid;grid-template-columns:1fr;gap:10px}
+.watch .w{border:1px solid var(--border);border-radius:12px;padding:12px;background:#0d1729}
+.watch .w .k{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);text-transform:uppercase}
+footer{color:var(--faint);font-size:12px;text-align:center;padding:10px 16px 30px}
+@media(min-width:700px){
+  .kpis{grid-template-columns:repeat(3,1fr)}
+  .grid2{grid-template-columns:1fr 1fr}
+  .watch{grid-template-columns:repeat(3,1fr)}
+}
+@media(min-width:900px){
+  .tabs{justify-content:center;padding:0 24px}
+  .tab{padding:16px 16px 14px}
+  h1{font-size:36px}
+  .kpis{grid-template-columns:repeat(6,1fr)}
+  .chart-box{height:300px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-p="theme">Theme</button>
+    <button class="tab" data-p="growth">Growth</button>
+    <button class="tab" data-p="valuation">Valuation</button>
+    <button class="tab" data-p="governance">Promoter &amp; Credit</button>
+    <button class="tab" data-p="risks">Risks</button>
+    <button class="tab" data-p="momentum">Momentum</button>
+    <button class="tab" data-p="verdict">Bottom Line</button>
+  </div>
+</nav>
+
+<header>
+  <div class="eyebrow">Deep Dive · NSE/BSE · Mumbai · Est. 1978</div>
+  <h1>Marine Electricals (India) Ltd</h1>
+  <p class="sub">A Navy electrical-systems specialist now riding India's data centre and chip-fab building boom. Strong growth and a tripled order book, but the share price already expects a lot.</p>
+  <div class="badges">
+    <span class="badge b-green">Weinstein Stage 2 · Advancing</span>
+    <span class="badge b-amber">Great company, demanding price</span>
+    <span class="badge b-red">P/E 93x vs 5-yr median 48.5x</span>
+    <span class="badge b-blue">ICRA BBB+ / A2</span>
+  </div>
+</header>
+
+<section class="kpis">
+  <div class="kpi"><div class="l">Market cap</div><div class="v">₹6,004 Cr</div><div class="n">Price ~₹429</div></div>
+  <div class="kpi"><div class="l">Order book</div><div class="v pos">₹2,073 Cr</div><div class="n">+201% YoY</div></div>
+  <div class="kpi"><div class="l">Q1 FY27 revenue</div><div class="v">₹259 Cr</div><div class="n">+55.2% YoY</div></div>
+  <div class="kpi"><div class="l">P/E</div><div class="v neg">93.1x</div><div class="n">5-yr median 48.5x</div></div>
+  <div class="kpi"><div class="l">FY26 free cash flow</div><div class="v neg">−₹43 Cr</div><div class="n">OCF −₹16 Cr</div></div>
+  <div class="kpi"><div class="l">1-yr return</div><div class="v pos">+97.8%</div><div class="n">6-mo +69.3%</div></div>
+</section>
+
+<main>
+
+<!-- THEME -->
+<section class="panel active" id="theme">
+  <h2>Theme: From Naval Niche to Digital Infrastructure</h2>
+  <p class="sub">What the company does, and why its mix is shifting.</p>
+
+  <div class="callout"><b>Key takeaway:</b> The Navy business is the steady anchor; data centres and chip factories are the new growth engine. In Q1 FY27, industry sales already overtook marine, and 65% of the ₹2,073 Cr order book is from the industry side.</div>
+
+  <div class="card">
+    <h3>The "nervous system" of ships and factories</h3>
+    <p>Founded in 1978 in Mumbai, Marine Electricals builds the equipment that carries and controls electricity: switchboards, power distribution, automation and complete electrical systems. After four decades as a trusted Indian Navy supplier, it is now using that engineering know-how for data centres, semiconductor (chip) factories and smart infrastructure.</p>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3><span class="tag t-blue">Segment 1</span>Defence &amp; Marine</h3>
+      <ul>
+        <li>Direct, first-line supplier (Tier-I) of complete electrical packages to the Indian Navy and Coast Guard, with roughly half the market in its product range.</li>
+        <li>Supplies ship navigation systems (Integrated Bridge Systems), radars, main switchboards and monitoring systems.</li>
+        <li>Fitted on Scorpène submarines, INS Vikrant, P15B destroyers and P17A frigates.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="tag t-purple">Segment 2</span>Industry Solutions</h3>
+      <ul>
+        <li>Low- and medium-voltage switchboards (LV/MV), power-carrying busbars (busducts) and smart motor controls for data centres, pharma, auto and chip fabs.</li>
+        <li>Largest Schneider Electric Blockset panel partner in India (&gt;50% share).</li>
+        <li>Repeat orders from AdaniConnex, STT, Princeton Digital, Equinix and Netmagic.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>Q1 FY27 revenue by segment (₹ Cr)</h3>
+      <div class="chart-box"><canvas id="segChart"></canvas></div>
+      <p class="src">Industry ₹156 Cr (+77% YoY) vs Marine ₹103 Cr (+30% YoY)</p>
+    </div>
+    <div class="card">
+      <h3>Mix shift in numbers</h3>
+      <ul>
+        <li>Marine was ~50% of FY26 revenue.</li>
+        <li>Management guides marine growth of 15–20% this year, with Industry growing faster.</li>
+        <li>Q1 FY27: Industry ₹156 Cr grew 77%; Marine ₹103 Cr grew 30%.</li>
+        <li><b>65%</b> of the ₹2,073 Cr order book (orders won but not yet delivered) is from Industry, led by data centres.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>The Navy moat (protective advantage)</h3>
+    <ul>
+      <li>₹2.35 lakh crore naval buying pipeline through 2035.</li>
+      <li>Fleet target of 200+ ships, up from ~150 today; ~50 warships under construction.</li>
+      <li>Long, non-optional order visibility: the Navy must keep buying regardless of the economy.</li>
+      <li>Hard to copy: shock/stealth testing grades and Approved Vendor status take decades to earn.</li>
+      <li>Every ship fitted becomes a decades-long maintenance income stream (Annual Maintenance and Rate Repair Contracts).</li>
+    </ul>
+  </div>
+</section>
+
+<!-- GROWTH -->
+<section class="panel" id="growth">
+  <h2>Growth: Order Book Explosion &amp; Capacity Expansion</h2>
+  <p class="sub">Five years of steady compounding, rising margins, and a big step-up in orders.</p>
+
+  <div class="callout"><b>Key takeaway:</b> Profit grew from ₹13 Cr (FY22) to ₹59 Cr (FY26) as the profit kept from each ₹100 of sales rose from ₹8.3 to ~₹11 (operating margin). The weak spot is cash: the business has not yet turned these profits into cash.</div>
+
+  <div class="card">
+    <h3>Revenue &amp; profit (₹ Cr) with operating margin</h3>
+    <div class="chart-box"><canvas id="finChart"></canvas></div>
+    <p class="src">Source: reported financials, FY22–FY26</p>
+  </div>
+
+  <div class="card">
+    <h3>Five-year financial trajectory (₹ Cr)</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Period</th><th>Revenue</th><th>Growth</th><th>EBITDA</th><th>OPM</th><th>PAT</th><th>ROCE</th><th>D/E</th></tr></thead>
+      <tbody>
+        <tr><td>FY22</td><td>376</td><td class="pos">+49.8%</td><td>41</td><td>8.3%</td><td>13</td><td>12.8%</td><td>0.21</td></tr>
+        <tr><td>FY23</td><td>443</td><td class="pos">+17.7%</td><td>47</td><td>8.7%</td><td>17</td><td>13.1%</td><td>0.33</td></tr>
+        <tr><td>FY24</td><td>622</td><td class="pos">+40.5%</td><td>62</td><td>8.3%</td><td>26</td><td>14.1%</td><td>0.39</td></tr>
+        <tr><td>FY25</td><td>767</td><td class="pos">+23.3%</td><td>84</td><td>9.0%</td><td>38</td><td>14.9%</td><td>0.14</td></tr>
+        <tr><td>FY26</td><td>877</td><td class="pos">+14.3%</td><td>109</td><td>10.8%</td><td>59</td><td>16.4%</td><td>0.18</td></tr>
+        <tr><td>TTM</td><td>969</td><td class="pos">+21.8%</td><td>122</td><td>10.9%</td><td>65</td><td class="mut">—</td><td class="mut">—</td></tr>
+        <tr class="hl"><td>Q1 FY27</td><td>259</td><td>+55.2%</td><td>33</td><td>10.9%</td><td>18</td><td>—</td><td>—</td></tr>
+      </tbody>
+    </table></div>
+    <p class="src">EBITDA = operating profit before interest, tax, depreciation · OPM = operating margin · PAT = net profit · ROCE = return on capital used · D/E = debt to equity. Q1 FY27: EBITDA +47%, PAT +51% YoY.</p>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>Order book (₹ Cr)</h3>
+      <div class="chart-box"><canvas id="obChart"></canvas></div>
+      <p class="src">5.8x the FY22 baseline · 8–24 months of work visibility</p>
+    </div>
+    <div class="card">
+      <h3>Return on capital used (ROCE %)</h3>
+      <div class="chart-box"><canvas id="roceChart"></canvas></div>
+      <p class="src">Source: reported financials, FY22–FY26</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Growth levers ahead</h3>
+    <ul>
+      <li><span class="tag t-amber">Orders</span>₹2,073 Cr backlog, up 201% YoY. Q1 FY27 alone added ₹784 Cr of new orders.</li>
+      <li><span class="tag t-purple">Data centres</span>Orders exceed ₹1,000 Cr from Equinix, STT Global, Princeton Digital and Digital Edge, converting to revenue over the next 4–6 quarters. Recent wins: Adani Infra (₹208.7 Cr) and L&amp;T (₹115 Cr).</li>
+      <li><span class="tag t-blue">Chip fabs</span>₹115 Cr L&amp;T order for Tata's Dholera fab, plus CG Semi and Micron packages, place it inside India's early chip-factory ecosystem.</li>
+      <li><span class="tag t-green">Goa plant</span>Sixth facility, inaugurated 14 Sep 2026 (~160,000 sq ft), dedicated to Power Train Units (PTUs) for data centres and shore-conversion systems; targeting ~800 PTUs/year by March 2027.</li>
+      <li><span class="tag t-amber">Target</span>Management's order inflow goal: "tentatively up to 3,000 to 3,300 crores this financial year" (MD Venkatesh Uchil, ET Now, Sep 2026).</li>
+      <li><span class="tag t-green">Margins</span>MEL Heavy Industries (Narhari) Palghar expansion enables naval motors up to 1 MW and in-house generator set (DG set) assembly, a lever for better margins.</li>
+    </ul>
+  </div>
+
+  <div class="callout red"><b>The caveat: cash.</b> Cash from operations (OCF) was −₹16 Cr in FY26 and free cash flow (FCF, cash left after capex) −₹43 Cr. Over 9 years, cumulative OCF of ₹79 Cr covers only 0.60x of adjusted profit. Customers take ~178 days to pay (receivable days), which ties up cash. The balance sheet is still strong: net cash ₹59 Cr, D/E 0.18.</div>
+</section>
+
+<!-- VALUATION -->
+<section class="panel" id="valuation">
+  <h2>Valuation: Premium Priced for Perfection</h2>
+  <p class="sub">How expensive the stock is versus its own history and its industry.</p>
+
+  <div class="callout red"><b>Key takeaway:</b> Investors are paying ₹93 for every ₹1 of yearly profit (P/E 93x), nearly double the 5-year median of 48.5x. There is no safety cushion: the business has to deliver flawlessly to justify this price.</div>
+
+  <div class="card">
+    <h3>Current multiple vs history &amp; industry</h3>
+    <div class="chart-box"><canvas id="valChart"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Multiple</th><th>Current</th><th>3-Yr Median</th><th>5-Yr Median</th><th>Industry</th></tr></thead>
+      <tbody>
+        <tr><td>P/E (price ÷ profit)</td><td class="neg">93.1x</td><td>62.0x</td><td>48.5x</td><td>56.5x</td></tr>
+        <tr><td>EV/EBITDA (business value ÷ op. profit)</td><td class="neg">56.2x</td><td>37.2x</td><td>37.2x</td><td>37.8x</td></tr>
+        <tr><td>P/B (price ÷ book value)</td><td class="neg">12.3x</td><td>7.4x</td><td>7.4x</td><td>9.2x</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>Other markers</h3>
+      <ul>
+        <li><b>PEG 2.50</b> — price paid relative to growth; above ~1 means growth is expensive.</li>
+        <li><b>FCF yield −0.7%</b> — the business currently consumes cash rather than generating it for shareholders.</li>
+        <li><b>Market cap ₹6,004 Cr</b></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>What the numbers say</h3>
+      <p>P/E at 93x is ~1.5x its 3-year median and nearly double its 5-year median. EV/EBITDA at 56x versus a 37x norm means the market is paying today for order-book growth and margin gains that haven't been delivered yet.</p>
+      <p>This is a <b>"great company, demanding price"</b> setup, not a value entry.</p>
+    </div>
+  </div>
+</section>
+
+<!-- GOVERNANCE & CREDIT -->
+<section class="panel" id="governance">
+  <h2>Promoter, Governance &amp; Credit</h2>
+  <p class="sub">Who owns and runs it, what the auditors flagged, and what lenders think.</p>
+
+  <div class="callout"><b>Key takeaway:</b> No single flag is fatal, but together the related-party deals, audit exceptions and legal claims justify a governance discount that the current price does not reflect. Lenders, meanwhile, keep upgrading the company.</div>
+
+  <div class="card">
+    <h3>Shareholding</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Holder</th><th>Stake</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td>Promoters</td><td>68.20%</td><td class="neg">−5.32% in latest quarter</td></tr>
+        <tr><td>Pledged shares</td><td class="pos">0.00%</td><td>None pledged as loan collateral</td></tr>
+        <tr><td>FII (foreign institutions)</td><td>1.12%</td><td class="pos">New entry, latest quarter</td></tr>
+        <tr><td>DII (domestic institutions)</td><td>0.41%</td><td class="pos">New entry, latest quarter</td></tr>
+      </tbody>
+    </table></div>
+    <p class="src">Source: shareholding pattern. Promoter trim made room for the new institutions — watch for further sales.</p>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3><span class="tag t-amber">Board</span>Family-run</h3>
+      <ul>
+        <li>Three Uchil siblings (Vinay, Venkatesh, Tanuja) sit on the board together.</li>
+        <li>Chairman's salary revised from ₹60 lakh to ₹90 lakh per annum over two years.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="tag t-red">Audit</span>Forensic flags (FY26 audit trail)</h3>
+      <ul>
+        <li>Standalone audit opinions are clean (unmodified) FY21–FY26.</li>
+        <li>Consolidated audit repeatedly flags: a going-concern warning (Emphasis of Matter) on loss-making subsidiary Eltech Engineers, whose net worth is fully wiped out.</li>
+        <li>Audit-trail exceptions persisting since FY24.</li>
+        <li>Unquantified differences in depreciation policy across subsidiaries.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3><span class="tag t-red">Related party</span>Deals with insiders</h3>
+      <ul>
+        <li>70% of loss-making MEL Shipyard sold to promoter-family individuals for ₹70,000 (Feb 2026).</li>
+        <li>Promoters converted warrants in 2023 at ₹21.94 per share, versus a current price near ₹429.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="tag t-red">Litigation</span>Legal overhang</h3>
+      <ul>
+        <li>₹31.36 Cr arbitration payout (mostly paid).</li>
+        <li>₹14.88 Cr GST demand under appeal.</li>
+        <li>₹16 Cr insolvency-court (IBC) refund claim pending at NCLT.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Credit rating: upgraded to BBB+ / A2 (ICRA)</h3>
+    <div class="ladder">
+      <span class="step">BBB−</span><span class="arrow">→</span>
+      <span class="step">BBB (FY21)</span><span class="arrow">→</span>
+      <span class="step">BBB / A3+ reaffirmed, limits ₹200 Cr (Mar 2024)</span><span class="arrow">→</span>
+      <span class="step now">BBB+ (Stable) / A2 · 17 Apr 2025</span>
+    </div>
+    <ul style="margin-top:12px">
+      <li>Long-term rating upgraded from BBB (Stable); short-term from A3+ to A2.</li>
+      <li>Covers enhanced bank limits of ₹322 Cr: cash credit ₹62.5 Cr and bank guarantees ₹238.15 Cr.</li>
+      <li>Reasons: bigger scale, stronger capital structure (net cash) and more diverse orders.</li>
+      <li>Note: facilities are partly secured by promoter-family properties and personal guarantees of the Uchil brothers.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- RISKS -->
+<section class="panel" id="risks">
+  <h2>Key Risks</h2>
+  <p class="sub">What could go wrong, in plain terms.</p>
+
+  <div class="callout red"><b>Biggest risk:</b> at 93x earnings, any growth disappointment could pull the multiple back toward its historical 48–62x range — a sharp fall in price even if the business is still growing.</div>
+
+  <div class="card">
+    <div class="risk"><div class="num">01</div><div><b>Cash gets stuck in the business (working capital drag).</b> Cash from operations was negative in three of the last five years (FY23, FY24, FY26); customers take ~178 days to pay. Growth eats cash before it produces it.</div></div>
+    <div class="risk"><div class="num">02</div><div><b>Delivering a tripled order book (execution risk).</b> Converting ₹2,073 Cr through naval shipyards and data centre sites on time; naval project delays are common.</div></div>
+    <div class="risk"><div class="num">03</div><div><b>Lumpy project milestones.</b> Data centre revenue is recognised at client-driven milestones; one hyperscaler slipping can push revenue out by a quarter.</div></div>
+    <div class="risk"><div class="num">04</div><div><b>Few large customers (concentration).</b> Big orders from a handful of developers (STT, Princeton, Adani). No customer was &gt;10% in FY25, but the order book concentrates it again.</div></div>
+    <div class="risk"><div class="num">05</div><div><b>Metal prices (commodity sensitivity).</b> Copper, aluminium and electrical steel over 15–18 month fixed-price contracts. Management says most contracts have price-variation (PV) clauses plus hedging at the quoting stage.</div></div>
+    <div class="risk"><div class="num">06</div><div><b>Governance tail risks.</b> Subsidiary churn, promoter-linked asset sales and consolidated audit exceptions.</div></div>
+    <div class="risk"><div class="num">07</div><div><b>Valuation risk.</b> At 93x P/E, any growth miss can trigger sharp multiple compression toward the 48–62x historical band.</div></div>
+  </div>
+</section>
+
+<!-- MOMENTUM -->
+<section class="panel" id="momentum">
+  <h2>Stock Momentum: Weinstein Stage 2</h2>
+  <p class="sub">Is the price trend healthy? Stan Weinstein's "Stage 2" means the stock is in an advancing uptrend.</p>
+
+  <div class="callout green"><b>Verdict:</b> Firmly in Stage 2 (Advancing Phase) — every checklist item passes. The uptrend stays intact while the price holds above the rising 30-week average (~₹298).</div>
+
+  <div class="card">
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Stage 2 criterion</th><th>Reading</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Price above 30-week average</td><td>₹429 vs ₹297.89</td><td class="pos">✅ Pass</td></tr>
+        <tr><td>30-week average rising (30W &gt; 40W)</td><td>₹297.89 &gt; ₹269.38</td><td class="pos">✅ Pass</td></tr>
+        <tr><td>Golden Cross active (10W EMA &gt; 30W EMA)</td><td>25 weeks</td><td class="pos">✅ Pass</td></tr>
+        <tr><td>Relative strength vs Nifty 500 (26W)</td><td>+27</td><td class="pos">✅ Pass</td></tr>
+        <tr><td>Distance from 52-week high</td><td>−12.6% (healthy pause)</td><td class="pos">✅ Pass</td></tr>
+        <tr><td>Distance above 52-week low</td><td>+184%</td><td class="pos">✅ Pass</td></tr>
+      </tbody>
+    </table></div>
+    <p class="src">Source: market prices and moving-average data</p>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>Price context</h3>
+      <ul>
+        <li>1-year return +97.8%; 6-month +69.3%.</li>
+        <li>The narrative cites a 14.9% pullback from the 52-week high (₹491 implied) after a strong run.</li>
+        <li>RSI (a momentum gauge, 0–100) at 49: the pause is cooling off, not breaking down.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>What confirms it</h3>
+      <ul>
+        <li>The 25-week-old golden cross and steady outperformance versus the Nifty 500 point to institutions buying.</li>
+        <li>Consistent with the new FII/DII entries in the shareholding pattern.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout red"><b>First warning signs to watch:</b> a weekly close below the 30-week average (~₹298), or the relative-strength line turning negative.</div>
+</section>
+
+<!-- VERDICT -->
+<section class="panel" id="verdict">
+  <h2>Bottom Line</h2>
+  <p class="sub">The structural story versus the price you pay for it.</p>
+
+  <div class="grid2">
+    <div class="card" style="border-color:rgba(55,211,155,.35)">
+      <h3 class="pos">The case for</h3>
+      <ul>
+        <li>A qualified naval near-duopoly that throws off steady work, now plugged into India's data centre and chip-fab buildout.</li>
+        <li>Record ₹2,073 Cr order book.</li>
+        <li>Upgraded BBB+ credit rating.</li>
+        <li>Clean Stage 2 technical setup.</li>
+      </ul>
+    </div>
+    <div class="card" style="border-color:rgba(255,89,100,.35)">
+      <h3 class="neg">The offsets</h3>
+      <ul>
+        <li>93x earnings with negative free cash flow.</li>
+        <li>A business model that needs a lot of working capital.</li>
+        <li>Promoter related-party transactions.</li>
+        <li>Consolidated audit exceptions.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout"><b>In one line:</b> the stock's momentum says the market believes the growth; the valuation says it cannot afford a stumble.</div>
+
+  <div class="card">
+    <h3>What to watch</h3>
+    <div class="watch">
+      <div class="w"><div class="k">Order inflows</div>Quarterly orders vs the ₹3,000–3,300 Cr FY27 target.</div>
+      <div class="w"><div class="k">Cash flow</div>Operating cash flow turning positive.</div>
+      <div class="w"><div class="k">Trend line</div>Price holding above the 30-week average (~₹298).</div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>This is an analytical deep dive, not investment advice. Risks to Reward.</footer>
+
+<script>
+var C = {accent:"#f0a500",green:"#37d39b",red:"#ff5964",blue:"#5aa9ff",purple:"#b48cff",muted:"#8a94a6",grid:"#17233b"};
+var drawn = {};
+
+function baseOpts(extra){
+  var o = {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:C.muted,font:{family:"JetBrains Mono",size:11}}},
+      tooltip:{titleFont:{family:"JetBrains Mono"},bodyFont:{family:"JetBrains Mono"}}},
+    scales:{
+      x:{ticks:{color:C.muted,font:{family:"JetBrains Mono",size:11}},grid:{color:C.grid}},
+      y:{ticks:{color:C.muted,font:{family:"JetBrains Mono",size:11}},grid:{color:C.grid}}
+    }
+  };
+  if(extra){ for(var k in extra){ o[k]=extra[k]; } }
+  return o;
+}
+
+var charts = {
+  theme: function(){
+    new Chart(document.getElementById("segChart"),{
+      type:"doughnut",
+      data:{labels:["Industry Solutions","Defence & Marine"],
+        datasets:[{data:[156,103],backgroundColor:[C.purple,C.blue],borderColor:"#0a1220",borderWidth:3}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:"62%",
+        plugins:{legend:{position:"bottom",labels:{color:C.muted,font:{family:"JetBrains Mono",size:11}}}}}
+    });
+  },
+  growth: function(){
+    var yrs = ["FY22","FY23","FY24","FY25","FY26"];
+    var o = baseOpts();
+    o.scales.y1 = {position:"right",ticks:{color:C.accent,font:{family:"JetBrains Mono",size:11},callback:function(v){return v+"%";}},grid:{drawOnChartArea:false},min:6,max:12};
+    new Chart(document.getElementById("finChart"),{
+      type:"bar",
+      data:{labels:yrs,datasets:[
+        {type:"bar",label:"Revenue",data:[376,443,622,767,877],backgroundColor:"rgba(90,169,255,.55)",borderRadius:4,yAxisID:"y"},
+        {type:"bar",label:"PAT",data:[13,17,26,38,59],backgroundColor:"rgba(55,211,155,.75)",borderRadius:4,yAxisID:"y"},
+        {type:"line",label:"OPM %",data:[8.3,8.7,8.3,9.0,10.8],borderColor:C.accent,backgroundColor:C.accent,tension:.3,yAxisID:"y1"}
+      ]},
+      options:o
+    });
+    new Chart(document.getElementById("obChart"),{
+      type:"bar",
+      data:{labels:["FY22 baseline","Current"],datasets:[{label:"Order book ₹ Cr",data:[356,2073],backgroundColor:["rgba(138,148,166,.5)",C.accent],borderRadius:6}]},
+      options:baseOpts({plugins:{legend:{display:false}}})
+    });
+    var ro = baseOpts({plugins:{legend:{display:false}}});
+    ro.scales.y.ticks.callback = function(v){return v+"%";};
+    new Chart(document.getElementById("roceChart"),{
+      type:"line",
+      data:{labels:yrs,datasets:[{label:"ROCE %",data:[12.8,13.1,14.1,14.9,16.4],borderColor:C.green,backgroundColor:"rgba(55,211,155,.15)",fill:true,tension:.3,pointRadius:4}]},
+      options:ro
+    });
+  },
+  valuation: function(){
+    new Chart(document.getElementById("valChart"),{
+      type:"bar",
+      data:{labels:["P/E","EV/EBITDA","P/B"],datasets:[
+        {label:"Current",data:[93.1,56.2,12.3],backgroundColor:C.red,borderRadius:4},
+        {label:"3-Yr Median",data:[62.0,37.2,7.4],backgroundColor:"rgba(240,165,0,.75)",borderRadius:4},
+        {label:"5-Yr Median",data:[48.5,37.2,7.4],backgroundColor:"rgba(138,148,166,.6)",borderRadius:4},
+        {label:"Industry",data:[56.5,37.8,9.2],backgroundColor:"rgba(90,169,255,.6)",borderRadius:4}
+      ]},
+      options:baseOpts()
+    });
+  }
+};
+
+function drawFor(id){
+  if(drawn[id] || !charts[id] || typeof Chart === "undefined") return;
+  drawn[id] = true;
+  charts[id]();
+}
+
+var tabBtns = document.querySelectorAll(".tab");
+for(var i=0;i<tabBtns.length;i++){
+  tabBtns[i].addEventListener("click", function(){
+    var id = this.getAttribute("data-p");
+    for(var j=0;j<tabBtns.length;j++){ tabBtns[j].classList.remove("active"); }
+    this.classList.add("active");
+    var panels = document.querySelectorAll(".panel");
+    for(var k=0;k<panels.length;k++){ panels[k].classList.remove("active"); }
+    document.getElementById(id).classList.add("active");
+    this.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});
+    window.scrollTo({top:0,behavior:"smooth"});
+    requestAnimationFrame(function(){ drawFor(id); });
+  });
+}
+window.addEventListener("load", function(){ drawFor("theme"); });
+</script>
+</body>
+</html>
