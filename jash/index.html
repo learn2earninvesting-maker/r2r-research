@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- r2r-build:bfab3de1b32bacd9 -->
+<title>Jash Engineering Ltd - R2R Research</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#04080f;--panel:#0a1220;--border:#17233b;--accent:#f0a500;--text:#e8edf6;--muted:#8a94a6;--faint:#5a6577;--red:#ff5964;--green:#37d39b;--blue:#5aa9ff;--purple:#b48cff}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:"DM Sans",system-ui,sans-serif;font-size:15px;line-height:1.6}
+h1,h2,h3{font-family:"Syne",sans-serif;margin:0 0 .5rem}
+h1{font-weight:800;font-size:1.75rem;line-height:1.2}
+h2{font-weight:700;font-size:1.35rem}
+h3{font-weight:600;font-size:1.02rem;color:var(--text)}
+p{margin:.4rem 0}
+.mono,table,.tag,.kpi .v,nav button{font-family:"JetBrains Mono",monospace}
+nav{position:sticky;top:0;z-index:100;background:rgba(4,8,15,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.tabs{display:flex;gap:.25rem;overflow-x:auto;scrollbar-width:none;padding:0 .75rem}
+.tabs::-webkit-scrollbar{display:none}
+nav button{background:none;border:none;color:var(--muted);font-size:.82rem;padding:.95rem .8rem .8rem;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;letter-spacing:.02em}
+nav button:hover{color:var(--text)}
+nav button.active{color:var(--accent);border-bottom-color:var(--accent)}
+@media(min-width:900px){.tabs{justify-content:center;padding:0 2rem}nav button{padding:1rem 1.1rem .85rem}}
+header,main,footer,.kpis{max-width:1100px;margin:0 auto;padding:0 1rem}
+header{padding-top:1.4rem}
+.sub{color:var(--muted);font-size:.88rem}
+.badges{display:flex;flex-wrap:wrap;gap:.4rem;margin:.8rem 0}
+.badge{font-family:"JetBrains Mono",monospace;font-size:.72rem;padding:.25rem .55rem;border-radius:4px;border:1px solid var(--border);background:var(--panel);color:var(--muted)}
+.badge.med{color:var(--accent);border-color:rgba(240,165,0,.4)}
+.badge.low{color:var(--red);border-color:rgba(255,89,100,.4)}
+.tag{display:inline-block;font-size:.7rem;font-weight:600;padding:.05rem .35rem;border-radius:3px;margin-right:.2rem;vertical-align:1px}
+.tF{background:rgba(90,169,255,.15);color:var(--blue)}
+.tE{background:rgba(180,140,255,.15);color:var(--purple)}
+.tO{background:rgba(240,165,0,.15);color:var(--accent)}
+.na{font-family:"JetBrains Mono",monospace;font-size:.75rem;color:var(--red);background:rgba(255,89,100,.1);padding:.05rem .35rem;border-radius:3px;white-space:nowrap}
+.src{color:var(--faint);font-size:.8rem}
+.snap{display:grid;grid-template-columns:1fr;gap:.7rem;margin-top:.8rem}
+@media(min-width:760px){.snap{grid-template-columns:1fr 1fr}}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:1rem 1.1rem;margin-bottom:.9rem}
+.card.snapc{margin:0}
+.callout{border-left:4px solid var(--accent);background:rgba(240,165,0,.07);padding:.8rem 1rem;border-radius:0 8px 8px 0;margin:.8rem 0}
+.callout.red{border-left-color:var(--red);background:rgba(255,89,100,.07)}
+.callout.green{border-left-color:var(--green);background:rgba(55,211,155,.07)}
+.callout.blue{border-left-color:var(--blue);background:rgba(90,169,255,.07)}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem;margin-top:1rem;margin-bottom:1.2rem}
+@media(min-width:760px){.kpis{grid-template-columns:repeat(3,1fr)}}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:.8rem .9rem}
+.kpi .l{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.kpi .v{font-size:1.35rem;font-weight:600;color:var(--text);margin:.15rem 0}
+.kpi .n{font-size:.75rem;color:var(--faint)}
+.panel{display:none;padding-bottom:1rem}
+.panel.active{display:block}
+.ptitle{margin:.4rem 0 1rem}
+.ptitle p{color:var(--muted)}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:.5rem 0}
+table{border-collapse:collapse;width:100%;font-size:.8rem;min-width:560px}
+th,td{border-bottom:1px solid var(--border);padding:.45rem .55rem;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600;background:#0d1729}
+td.num,th.num{text-align:right}
+.neg{color:var(--red)}
+.pos{color:var(--green)}
+.H{color:var(--red);font-weight:600}
+.M{color:var(--accent);font-weight:600}
+.L{color:var(--green);font-weight:600}
+.chartbox{position:relative;height:290px;margin-top:.6rem}
+.grid2{display:grid;grid-template-columns:1fr;gap:.9rem}
+@media(min-width:900px){.grid2{grid-template-columns:1fr 1fr}}
+.grid2 .card{margin-bottom:0}
+ul,ol{padding-left:1.2rem;margin:.4rem 0}
+li{margin:.3rem 0}
+.conf{font-family:"JetBrains Mono",monospace;font-size:.82rem}
+details summary{cursor:pointer;color:var(--accent);font-family:"JetBrains Mono",monospace;font-size:.8rem}
+footer{border-top:1px solid var(--border);color:var(--faint);font-size:.8rem;padding:1.2rem 1rem 2rem;text-align:center;margin-top:1rem}
+.legend{font-size:.8rem;color:var(--muted);margin-top:.4rem}
+</style>
+</head>
+<body>
+<nav>
+  <div class="tabs" id="tabs">
+    <button class="active" data-tab="sector">Sectoral theme</button>
+    <button data-tab="growth">Growth</button>
+    <button data-tab="valuation">Valuation</button>
+    <button data-tab="promoter">Promoter pedigree</button>
+    <button data-tab="risks">Risks</button>
+    <button data-tab="sources">Sources</button>
+  </div>
+</nav>
+
+<header>
+  <h1>Jash Engineering Ltd <span class="mono" style="color:var(--accent);font-size:1rem">(NSE:JASH)</span></h1>
+  <div class="sub">Deep dive · As of 18 Oct 2026 (IST) · Share price (CMP) ₹545 · Market cap ₹3,444 cr <span class="src">(Screener, fetched 18 Oct 2026 IST)</span></div>
+  <div class="badges">
+    <span class="badge med">Sectoral theme: MEDIUM confidence</span>
+    <span class="badge low">Growth: MEDIUM-LOW</span>
+    <span class="badge med">Valuation: MEDIUM</span>
+    <span class="badge low">Promoter pedigree: LOW</span>
+    <span class="badge med">Risks: MEDIUM</span>
+  </div>
+  <div class="legend">Labels: <span class="tag tF">[F]</span> fact · <span class="tag tE">[E]</span> estimate (working shown) · <span class="tag tO">[O]</span> opinion · <span class="na">NOT DISCLOSED</span> / <span class="na">NOT AVAILABLE</span> = gap, not filled in.</div>
+
+  <div class="callout red">
+    <strong>Read this first.</strong> None of the company's main documents (BSE/NSE earnings-call transcripts, investor presentations, annual reports) could be downloaded for this report. The servers returned errors. What management said on calls and in presentations comes from dated second-hand write-ups, plus two company PDFs found through search. Annual-report items (deals with related parties, management pay, contingent liabilities, the auditor's report) are therefore <span class="na">NOT AVAILABLE</span>. Confidence is capped accordingly.
+  </div>
+
+  <div class="snap">
+    <div class="card snapc"><h3>What it does <span class="tag tF">[F]</span></h3><p>Designs, casts, builds and supplies equipment that controls water flow: sluice and penstock gates, screens, valves and pumping/process equipment. Customers are municipal water, wastewater and industrial plants in India, and abroad through subsidiaries in the US, UK and Austria. <span class="src">(Screener About)</span></p></div>
+    <div class="card snapc"><h3>Where it is now <span class="tag tF">[F]</span></h3><p>FY26 revenue was ₹736 cr, flat on FY25's ₹735 cr. Profit after tax (PAT) fell 13% to ₹76 cr <span class="src">(Screener)</span>. In Jan/Feb 2026 the company had projected a revised ₹775-800 cr.</p></div>
+    <div class="card snapc"><h3>What drives the stock from here <span class="tag tO">[O]</span></h3><p>Whether it hits its FY27 targets of ₹875 cr revenue and ₹100-105 cr PAT. These rest on a ₹944 cr order book (work already won but not yet delivered).</p></div>
+    <div class="card snapc"><h3>What is most likely to go wrong <span class="tag tO">[O]</span></h3><p>A second year of missing its own forecast. Likely causes: export shipments slipping, losses at Rodney Hunt (US) and at the newly bought process-equipment unit. At ~40 times last-12-months earnings, there is no cushion for that.</p></div>
+  </div>
+</header>
+
+<section class="kpis">
+  <div class="kpi"><div class="l">Share price (CMP)</div><div class="v">₹545</div><div class="n">Screener, 18 Oct 2026 · 52-wk ₹321-620</div></div>
+  <div class="kpi"><div class="l">Market cap</div><div class="v">₹3,444 cr</div><div class="n">Screener, 18 Oct 2026</div></div>
+  <div class="kpi"><div class="l">Price / earnings (P/E)</div><div class="v">40.0x</div><div class="n">[F] on TTM PAT ₹86 cr (Screener)</div></div>
+  <div class="kpi"><div class="l">FY26 revenue</div><div class="v">₹736 cr</div><div class="n">Flat vs ₹735 cr FY25 (Screener)</div></div>
+  <div class="kpi"><div class="l">FY26 profit (PAT)</div><div class="v neg">₹76 cr</div><div class="n">-13% vs ₹87 cr FY25 (Screener)</div></div>
+  <div class="kpi"><div class="l">Order book</div><div class="v">₹944 cr</div><div class="n">As of 1 Oct 2026 · FY27 guide ₹875 cr revenue</div></div>
+</section>
+
+<main>
+<!-- ============ SECTOR ============ -->
+<section class="panel active" id="p-sector">
+  <div class="ptitle"><h2>1. Sectoral theme</h2><p>What industry Jash sits in, how steady its demand is, and where its sales come from.</p></div>
+
+  <div class="card">
+    <h3>The theme</h3>
+    <p>Jash is part of the water-infrastructure story: town water supply and sewage treatment, flood control and desalination (turning seawater into drinking water) in India, plus replacement of US town water systems through its Rodney Hunt subsidiary.</p>
+    <p><span class="tag tO">[O]</span> The demand is real and long-lived, but it comes in lumps. It depends on government project budgets and on the timing of the big contractors who build these plants (EPC: engineering, procurement and construction).</p>
+    <p>No independent source on industry size was available, so the size of this tailwind cannot be measured here <span class="na">NOT AVAILABLE</span> (needs an industry report).</p>
+    <p><span class="tag tF">[F]</span> In May 2025 the company put India's water-infrastructure opportunity at ₹1,500 cr+ <span class="src">(May 2025 investor presentation)</span>. That is the company's own estimate.</p>
+  </div>
+
+  <div class="card">
+    <h3>Steady trend or boom-and-bust? (structural vs cyclical)</h3>
+    <p><span class="tag tE">[E]</span> Revenue rose in 10 of the last 11 years <span class="src">(Screener; FY16 and FY26 flat)</span>, and earnings do not follow any commodity price.</p>
+    <p>But the profit kept from each ₹100 of sales (operating profit margin, OPM) swings a lot: from 5% (FY18) to 19% (FY24) <span class="src">(Screener)</span>.</p>
+    <p>FY26 showed the swing comes from the mix of exports and from world events, not from demand. India's share of revenue rose from 37% in FY25 to 44.5% in FY26, while uncertainty over US import taxes (tariffs) and the West Asia conflict dented profits. US tariffs moved to 25% and then to 50%.</p>
+    <div class="callout"><strong>Verdict <span class="tag tO">[O]</span>:</strong> Sales volume growth is structural (long-term), but margins are cyclical and exposed to sudden events.</div>
+  </div>
+
+  <div class="card">
+    <h3>Business segments</h3>
+    <p><span class="tag tF">[F]</span> The company reports only one business segment. Its sustainability report (BRSR) puts 98.61% of turnover under one activity, so profit by segment (segment EBIT) is <span class="na">NOT DISCLOSED</span>. The product split it has disclosed:</p>
+    <div class="tw"><table>
+      <tr><th>Product</th><th>Share of sales (period, source)</th><th>Profit margin (EBIT)</th><th>Growth YoY</th></tr>
+      <tr><td>Water control gates</td><td>63% (FY25, May-25 IP)</td><td><span class="na">NOT DISCLOSED</span></td><td><span class="na">NOT DISCLOSED</span></td></tr>
+      <tr><td>Screening equipment</td><td>16% (FY25, May-25 IP)</td><td><span class="na">NOT DISCLOSED</span></td><td><span class="na">NOT DISCLOSED</span></td></tr>
+      <tr><td>Valves</td><td>11% (FY25, May-25 IP)</td><td><span class="na">NOT DISCLOSED</span></td><td><span class="na">NOT DISCLOSED</span></td></tr>
+      <tr><td>Hydropower / pumping / process / others</td><td>10% (FY25, May-25 IP)</td><td><span class="na">NOT DISCLOSED</span></td><td><span class="na">NOT DISCLOSED</span></td></tr>
+      <tr><td>FY26 split by product</td><td colspan="3"><span class="na">NOT AVAILABLE</span> (needs FY26 annual report / investor presentation)</td></tr>
+    </table></div>
+    <h3 style="margin-top:1rem">By company entity (₹ cr)</h3>
+    <div class="tw"><table>
+      <tr><th>Entity</th><th class="num">FY25 revenue</th><th class="num">FY26 revenue</th><th class="num">FY25 PAT</th><th class="num">FY26 PAT</th></tr>
+      <tr><td>Jash standalone (India parent)</td><td class="num">523.1</td><td class="num neg">509.0</td><td class="num">75.3</td><td class="num neg">68.1</td></tr>
+      <tr><td>Rodney Hunt (US)</td><td class="num">324.4</td><td class="num neg">284.9</td><td class="num">21.8</td><td class="num neg">12.1</td></tr>
+    </table></div>
+    <p class="src">The entity figures add up to more than the group total because the companies sell to each other (inter-company sales).</p>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>Geography, FY26 <span class="tag tF">[F]</span></h3>
+      <div class="chartbox"><canvas id="geoChart"></canvas></div>
+      <p class="src">India 44.5%, USA 35.5%, Far and Southeast Asia 10.7%, Europe and Africa 7.3%, Middle East 2%.</p>
+    </div>
+    <div class="card">
+      <h3>Why geography matters</h3>
+      <div class="callout red"><strong>More than a third of revenue comes from the US alone, and the US is where the tariff and policy risk sits.</strong></div>
+      <p>How much depends on the biggest customers (top-customer concentration): <span class="na">NOT DISCLOSED</span> (needs annual report).</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:.9rem">
+    <h3>Competitive position</h3>
+    <p><span class="tag tF">[F]</span> A second-hand source names Kirloskar Brothers and WPIL as competitors.</p>
+    <p><span class="tag tO">[O]</span> Both are mainly pump makers, so they are neighbours rather than direct rivals in gates and screens.</p>
+    <p>Market share: <span class="na">NOT AVAILABLE</span>. Global gate competitors to Rodney Hunt: <span class="na">NOT AVAILABLE</span>.</p>
+  </div>
+
+  <div class="card">
+    <h3>Can it hold its prices? (pricing-power test)</h3>
+    <p>The test: did the profit left after paying for materials (gross margin) hold up in the last bad year?</p>
+    <p><span class="tag tF">[F]</span> In FY26, with flat revenue and falling profit, gross margin actually improved to 57.0% from 55.7%. So pricing held.</p>
+    <p>Operating profit (EBITDA) fell because fixed costs stayed while sales dropped (operating deleverage): a 12% revenue fall at Rodney Hunt became a 44% drop in its profit.</p>
+    <p>Gross margin did swing between quarters: 49.4% in Q4FY25 and 50.8% in Q1FY26, against ~60% in Q4FY26 and Q1FY27 <span class="src">(second-hand summaries of results)</span>. FY18 gross margin: <span class="na">NOT AVAILABLE</span>.</p>
+    <div class="callout"><span class="tag tO">[O]</span> What protects the business: a range of large custom sizes, its own foundry, and decades of approvals with the consultants who write project specifications. That makes customers reluctant to switch, but it is <strong>not a proven moat</strong> (lasting competitive advantage).</div>
+  </div>
+
+  <div class="card conf">Confidence: <span style="color:var(--accent)">MEDIUM</span>. Would rise with the FY26 annual-report segment and customer notes and an independent industry-size source.</div>
+</section>
+
+<!-- ============ GROWTH ============ -->
+<section class="panel" id="p-growth">
+  <div class="ptitle"><h2>2. Growth</h2><p>Ten years of numbers, what drives sales, how good the growth is, and how well management has kept its promises.</p></div>
+
+  <div class="card">
+    <h3>a. Ten-year track record</h3>
+    <p class="src">Screener consolidated, ₹ cr. OPM = operating profit margin. PAT = profit after tax. CFO = cash generated by operations. ROCE = return on all capital used. "Borrowings" means gross borrowings, because the data export has no cash figure; net debt is <span class="na">NOT AVAILABLE</span>.</p>
+    <div class="grid2">
+      <div><div class="chartbox"><canvas id="annualChart"></canvas></div></div>
+      <div><div class="chartbox"><canvas id="marginChart"></canvas></div></div>
+    </div>
+    <div class="tw"><table>
+      <tr><th>FY</th><th class="num">Revenue</th><th class="num">OPM</th><th class="num">PAT</th><th class="num">CFO</th><th class="num">ROCE</th><th class="num">Borrowings</th></tr>
+      <tr><td>FY17</td><td class="num">158</td><td class="num">13%</td><td class="num">10</td><td class="num">21</td><td class="num">16%</td><td class="num">52</td></tr>
+      <tr><td>FY18</td><td class="num">175</td><td class="num">5%</td><td class="num">0</td><td class="num neg">-8</td><td class="num">4%</td><td class="num">64</td></tr>
+      <tr><td>FY19</td><td class="num">248</td><td class="num">9%</td><td class="num">8</td><td class="num">18</td><td class="num">13%</td><td class="num">74</td></tr>
+      <tr><td>FY20</td><td class="num">278</td><td class="num">14%</td><td class="num">20</td><td class="num">18</td><td class="num">19%</td><td class="num">84</td></tr>
+      <tr><td>FY21</td><td class="num">299</td><td class="num">17%</td><td class="num">31</td><td class="num">35</td><td class="num">21%</td><td class="num">72</td></tr>
+      <tr><td>FY22</td><td class="num">368</td><td class="num">13%</td><td class="num">32</td><td class="num">14</td><td class="num">17%</td><td class="num">82</td></tr>
+      <tr><td>FY23</td><td class="num">402</td><td class="num">16%</td><td class="num">52</td><td class="num">34</td><td class="num">23%</td><td class="num">82</td></tr>
+      <tr><td>FY24</td><td class="num">516</td><td class="num">19%</td><td class="num">67</td><td class="num">58</td><td class="num">25%</td><td class="num">80</td></tr>
+      <tr><td>FY25</td><td class="num">735</td><td class="num">17%</td><td class="num">87</td><td class="num">55</td><td class="num">25%</td><td class="num">99</td></tr>
+      <tr><td>FY26</td><td class="num">736</td><td class="num">14%</td><td class="num">76</td><td class="num">56</td><td class="num">18%</td><td class="num">103</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Last 8 quarters</h3>
+    <p class="src">Screener, ₹ cr.</p>
+    <div class="chartbox"><canvas id="qtrChart"></canvas></div>
+    <div class="tw"><table>
+      <tr><th>Qtr</th><th class="num">Q2FY25</th><th class="num">Q3FY25</th><th class="num">Q4FY25</th><th class="num">Q1FY26</th><th class="num">Q2FY26</th><th class="num">Q3FY26</th><th class="num">Q4FY26</th><th class="num">Q1FY27</th></tr>
+      <tr><td>Revenue</td><td class="num">139.6</td><td class="num">180.7</td><td class="num">300.4</td><td class="num">127.6</td><td class="num">157.5</td><td class="num">160.5</td><td class="num">290.5</td><td class="num">149.9</td></tr>
+      <tr><td>OPM</td><td class="num">17.6%</td><td class="num">22.5%</td><td class="num">19.6%</td><td class="num neg">-3.2%</td><td class="num">12.9%</td><td class="num">10.6%</td><td class="num">23.7%</td><td class="num">5.4%</td></tr>
+      <tr><td>PAT</td><td class="num">16.1</td><td class="num">34.8</td><td class="num">35.8</td><td class="num neg">-5.2</td><td class="num">11.0</td><td class="num">13.1</td><td class="num">56.7</td><td class="num">5.1</td></tr>
+    </table></div>
+    <div class="callout"><span class="tag tE">[E]</span> Sales are heavily bunched at year-end. Q4 was 41% of FY25 revenue (300/735) and 39% of FY26 (290.5/736). So the full-year result depends on what gets shipped in March.</div>
+  </div>
+
+  <div class="card">
+    <h3>b. What drives revenue</h3>
+    <p>For a capital-goods maker, sales = order book (work won) × how fast it is delivered (execution rate).</p>
+    <p><span class="tag tF">[F]</span> Order book history:</p>
+    <div class="chartbox"><canvas id="obChart"></canvas></div>
+    <p class="src">₹784 cr (1 Apr 2024), ₹873 cr (Nov 2024 concall), ₹838 cr (1 May 2025, IP), ₹827 cr (1 Apr 2026), ₹899 cr (1 May 2026), ₹932 cr (1 Aug 2026), ₹944 cr (1 Oct 2026).</p>
+    <p>The latest ₹944 cr book splits ₹293 cr within India and ₹639 cr outside India. By entity: Jash ₹559 cr, Rodney Hunt ₹369 cr, Waterfront ₹34 cr, Jash Process Equipment ₹29 cr, Mahr ₹31 cr.</p>
+    <p><span class="tag tE">[E]</span> Order book compared with last-12-months revenue (book-to-bill) is 944 ÷ 758 = <span class="mono">1.25x</span>.</p>
+    <div class="callout red"><strong>The order book grew only ~8% in roughly two years (₹873 cr in Nov 2024 to ₹944 cr in Oct 2026), while revenue was flat. That is a steady state, not acceleration.</strong> Management itself cautioned that the order book does not turn one-to-one into same-year sales.</div>
+    <p><span class="tag tF">[F]</span> <strong>Capacity:</strong> The Unit 1 foundry and valve expansion was completed in July 2026, raising casting capacity by 50% and valve capacity by over 30%. A second source gives the gate-and-valve increase as "over 30 percent". How much of the capacity is being used (utilisation): <span class="na">NOT DISCLOSED</span>.</p>
+  </div>
+
+  <div class="card">
+    <h3>c. Quality of growth</h3>
+    <ul>
+      <li><strong>Does profit turn into cash?</strong> <span class="tag tE">[E]</span> Total cash from operations over FY17-26 is ₹301 cr against total PAT of ₹383 cr, a ratio of <strong class="mono">0.79</strong>. That passes the 0.7 bar, but only just. Total free cash flow (cash left after investment) is ₹96 cr, just 25% of PAT <span class="src">(Screener)</span>.</li>
+      <li><strong>Money owed by customers (receivables)</strong> <span class="tag tF">[F]</span><span class="tag tE">[E]</span>: the average days customers take to pay (debtor days) rose from 112 (FY25) to 149 (FY26). Cash tied up in day-to-day operations (working-capital days) rose from 71 to 103 <span class="src">(Screener)</span>. <span class="tag tE">[E]</span> Receivables went from about ₹226 cr (112/365 × 735) to about ₹300 cr (149/365 × 736), <strong class="neg">up ~33% while revenue was flat.</strong> Part of this is March-heavy billing. Either way it is a <strong class="neg">red flag</strong> until the H1FY27 balance sheet shows the money collected.</li>
+      <li><strong>Return on new money invested</strong> <span class="tag tE">[E]</span> (EBIT = PBT + interest; capital employed = equity + reserves + borrowings, Screener): over 3 years (FY23→26) extra profit ₹37 cr ÷ extra capital ₹301 cr = <strong class="mono">12%</strong>. Over 5 years (FY21→26) 57 ÷ 394 = <strong class="mono">14%</strong>. Both are well below the reported 25% ROCE for FY24-25. <strong>New capital, including the FY24 share issue and acquisitions, is earning about half the historical return.</strong></li>
+      <li><strong>Income from outside the core business and one-offs:</strong> other income was ₹20 cr in FY26, 22% of the ₹90 cr profit before tax (PBT) <span class="src">(Screener)</span>. <strong class="neg">In Q1FY27, other income of ₹6.13 cr was almost all of PBT (₹6.54 cr).</strong> A tariff refund of ₹5.6 cr helped margins, and about ₹7.5 cr more is expected. <strong>The Q1 "turnaround" was largely one-off.</strong> Quarterly tax rates are erratic too: -1.24% in Q3FY26, -121% in Q1FY25 <span class="src">(Screener)</span>.</li>
+      <li><strong>Sales carried over (spill-over)</strong> <span class="tag tF">[F]</span><span class="tag tE">[E]</span>: about ₹35 cr of March 2026 shipments missed the shipping-terms (Incoterms) cut-off and will count in Q1FY27 revenue. <span class="tag tE">[E]</span> If all of it landed in Q1, underlying Q1FY27 revenue was about ₹115 cr (149.9 − 35), <strong class="neg">roughly 10% below Q1FY26's ₹127.6 cr.</strong> The exact amount booked was not confirmed in the sources available.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>d. Walk-the-talk: promises vs delivery</h3>
+    <div class="tw"><table>
+      <tr><th>Period / date</th><th>Guided</th><th>Delivered</th><th>Hit / Miss</th></tr>
+      <tr><td>FY25 (Apr 2024)</td><td>₹650 cr (Reuters, via Zerodha). The Nov 2024 concall instead recalls a combined revenue of Rs.675 crore: the two sources conflict</td><td>₹735 cr</td><td class="pos"><strong>Hit (beat)</strong></td></tr>
+      <tr><td>Q2FY25 call</td><td>Rodney Hunt profit dip described as momentary</td><td>Rodney Hunt PAT ₹21.8 cr FY25, then ₹12.1 cr FY26</td><td class="M">Hit FY25, then miss</td></tr>
+      <tr><td>FY26 (May 2025 IP)</td><td>₹860 cr</td><td>₹736 cr</td><td class="neg"><strong>Miss (-14%)</strong></td></tr>
+      <tr><td>FY26 (Nov 2025 IP)</td><td>yearly revenue in excess of Rs. 825 Cr</td><td>₹736 cr</td><td class="neg">Miss</td></tr>
+      <tr><td>FY26 (Jan/Feb 2026)</td><td>₹775-800 cr</td><td>₹736 cr</td><td class="neg">Miss</td></tr>
+      <tr><td>Process equipment (Q1FY26 call)</td><td>Double ~₹100 cr to ₹200 cr in 3 years (AlphaSpread summary)</td><td>Revenue fell to ₹8 cr from ₹14 cr and PAT moved to minus ₹1 cr (Q1FY27)</td><td class="neg">Missing so far</td></tr>
+      <tr><td>Saudi/Houston plants</td><td>Deferred April 2026, then back on for "by FY28" in the June 2026 newsletter</td><td>n/a</td><td class="M">Shifting</td></tr>
+    </table></div>
+    <p><strong>Current guidance (Q1FY27 call):</strong> FY27 revenue of ₹875 cr and PAT of ₹100-105 cr, a 13-14% PAT margin.</p>
+    <p><span class="tag tE">[E]</span> After Q1 (₹150 cr revenue, ₹5 cr PAT), the remaining nine months need ₹725 cr revenue and ₹95-100 cr PAT. The same nine months of FY26 delivered ₹609 cr and ₹81 cr. So the ask is +19% revenue and +18-24% PAT.</p>
+    <div class="callout red"><span class="tag tO">[O]</span> <strong>Given the record (one beat, then three successive downgrades ending in a 14% miss), the guidance looks aggressive.</strong></div>
+    <p>One more cautious-looking signal: management kept ₹875 cr unchanged even though the order book plus Q1 revenue exceeds ₹1,080 cr.</p>
+  </div>
+
+  <div class="card">
+    <h3>e. Catalysts ahead</h3>
+    <div class="tw"><table>
+      <tr><th>Catalyst</th><th>Timing</th><th>Size / impact</th><th>Source</th><th>Status</th></tr>
+      <tr><td>Unit 1 foundry and valve capacity</td><td>Commissioned Jul 2026</td><td>Casting +50%, valves +30%</td><td>Sahi, Sep 2026</td><td>Done; ramp-up unproven</td></tr>
+      <tr><td>Rodney Hunt revenue</td><td>FY27</td><td>$35-36 million vs ~$30m FY26</td><td>Q1FY27 call</td><td class="neg">Q1 down 11% YoY</td></tr>
+      <tr><td>Further tariff refund</td><td>FY27</td><td>~₹7.5 cr, one-off</td><td>Q1FY27 call</td><td>Pending government processing</td></tr>
+      <tr><td>Data-centre pressure vessels</td><td>Undated</td><td>Four vessels, negotiations for 32 more and quotes for over 600</td><td>Q1FY27 call</td><td>Early stage</td></tr>
+      <tr><td>₹200 cr capex (Orange MA, Houston, Saudi, UK)</td><td>Apr 2026-Mar 2029</td><td>Toward ₹1,500 cr revenue by FY31</td><td>Company FAQ, Aug 2026</td><td>Partly deferred earlier</td></tr>
+      <tr><td>Jash Process Equipment turnaround</td><td>2-3 quarters</td><td>Lost orders worth ₹150-200 cr</td><td>Q1FY27 call</td><td>Under review</td></tr>
+    </table></div>
+    <p><strong>How much new investment is needed (capital intensity)</strong> <span class="tag tE">[E]</span>: ₹200 cr of capex (spending on plants and equipment) equals ~94% of FY26 net fixed assets of ₹212 cr <span class="src">(Screener)</span>. Funding source: <span class="na">NOT DISCLOSED</span>.</p>
+    <p>Today each ₹1 of fixed assets produces ₹3.5 of sales (asset turn 736/212 = 3.5x). ₹1,500 cr on about ₹412 cr of assets implies 3.6x, which is consistent. But the company FAQ says ₹1,200 cr by FY29 is achievable subject to 3-shift operations (running round the clock), which is a demanding assumption. How the last expansion ramped up: <span class="na">NOT AVAILABLE</span>.</p>
+  </div>
+
+  <div class="card conf">Confidence: <span style="color:var(--red)">MEDIUM-LOW</span>. The financials are solid (Screener). Guidance history comes from second-hand summaries. Reading the transcripts and the FY26 annual-report cash-flow notes would raise it.</div>
+</section>
+
+<!-- ============ VALUATION ============ -->
+<section class="panel" id="p-valuation">
+  <div class="ptitle"><h2>3. Valuation</h2><p>How expensive the stock is, compared with itself and peers, and what the price already assumes.</p></div>
+
+  <div class="card">
+    <h3>Current multiples</h3>
+    <p class="src">Screener, 18 Oct 2026 IST unless stated. TTM = trailing twelve months.</p>
+    <div class="tw"><table>
+      <tr><th>Measure (plain English)</th><th class="num">Value</th><th>Label / working</th></tr>
+      <tr><td>Price ÷ last-12-months profit (P/E)</td><td class="num">40.0x</td><td><span class="tag tF">[F]</span> on TTM PAT of ₹86 cr</td></tr>
+      <tr><td>Price ÷ book value per share (P/B)</td><td class="num">6.6x</td><td><span class="tag tE">[E]</span> 545 ÷ 82.1</td></tr>
+      <tr><td>Market cap ÷ sales</td><td class="num">4.5x</td><td><span class="tag tE">[E]</span> 3,444 ÷ 758</td></tr>
+      <tr><td>Whole-business value ÷ operating profit (EV/EBITDA)</td><td class="num">~31x</td><td><span class="tag tE">[E]</span> (3,444 + 103 borrowings) ÷ TTM operating profit ₹114 cr; gross of cash. Net figure <span class="na">NOT AVAILABLE</span> (cash not in export)</td></tr>
+      <tr><td>P/E on next year's guided profit (forward P/E)</td><td class="num">33.6x</td><td><span class="tag tE">[E]</span> 3,444 ÷ 102.5 (midpoint of FY27 PAT guidance)</td></tr>
+      <tr><td>Dividend yield</td><td class="num">0.29%</td><td><span class="tag tF">[F]</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Against its own history</h3>
+    <p>5-year P/E range: <span class="na">NOT AVAILABLE</span> (needs a historical valuation series).</p>
+    <p>The 52-week price range is ₹321-620 <span class="src">(Screener)</span>, so the stock trades near the top.</p>
+    <p>A June 2026 note said Jash trades at around 37 times trailing earnings, justifiable only if FY26 proves a blip.</p>
+  </div>
+
+  <div class="card">
+    <h3>Peers (dated; the sources conflict)</h3>
+    <div class="tw"><table>
+      <tr><th>Company</th><th class="num">P/E</th><th>Date, source</th></tr>
+      <tr><td>Kirloskar Brothers</td><td class="num">35.46x</td><td>16 Oct 2026, ICICI Direct</td></tr>
+      <tr><td>Kirloskar Brothers</td><td class="num">54.39x</td><td>16 Oct 2026, Bajaj Finserv/Kotak</td></tr>
+      <tr><td>Kirloskar Brothers / WPIL</td><td class="num">37.4x / 26.3x</td><td>6 Oct 2026, Value Research peer table</td></tr>
+    </table></div>
+    <p><span class="tag tO">[O]</span> The 35-37x cluster for Kirloskar Brothers is used. The 54x figure is an outlier from aggregator sites that are likely using a different earnings base. Both peers are pump makers, so they are imperfect comparisons.</p>
+    <div class="callout"><strong>On that basis Jash trades level with or above the larger, more diversified Kirloskar Brothers, and at ~1.5x WPIL.</strong></div>
+  </div>
+
+  <div class="card">
+    <h3>What the price already assumes <span class="tag tE">[E]</span></h3>
+    <ul>
+      <li>To earn 12% a year over 3 years, market cap must reach 3,444 × 1.12³ ≈ <strong>₹4,840 cr</strong> by late 2029.</li>
+      <li>At a 25x exit P/E, that needs PAT of ~₹194 cr by FY30, a <strong>~31% yearly growth rate (CAGR)</strong> from TTM ₹86 cr. At a 30x exit it needs ₹161 cr, a ~23% CAGR.</li>
+      <li>Management's own FY31 plan (₹1,500 cr revenue at a 13-14% margin) gives PAT of ~₹195-210 cr.</li>
+    </ul>
+    <div class="callout red"><strong>The price assumes that plan is delivered on time or a year early, at a premium multiple. Last year's guidance was missed by 14%.</strong></div>
+  </div>
+
+  <div class="card">
+    <h3>Scenarios for FY28</h3>
+    <p class="src">Value per share on 6.32 cr shares [E] = 3,444 ÷ 545. Bars compared with today's price of ₹545.</p>
+    <div class="chartbox"><canvas id="scenChart"></canvas></div>
+    <div class="tw"><table>
+      <tr><th></th><th>Bear</th><th>Base</th><th>Bull</th></tr>
+      <tr><td>Driver (basis)</td><td>FY27 misses again by ~14%, matching the FY26 miss</td><td>FY27 ~6% below guidance; FY28 grows at the 10-year median of 17.4% (Screener)</td><td>FY27 hits ₹875 cr; FY28 reaches the ~₹1,025 cr pegged in a Tradebrains note citing the company</td></tr>
+      <tr><td>Revenue FY28</td><td>₹830 cr</td><td>₹960 cr</td><td>₹1,025 cr</td></tr>
+      <tr><td>PAT margin (basis)</td><td>10% (FY26 actual)</td><td>11.5% (FY25 actual 11.6%)</td><td>13.5% (management's 13-14%)</td></tr>
+      <tr><td>PAT FY28</td><td>₹83 cr</td><td>₹110 cr</td><td>₹138 cr</td></tr>
+      <tr><td>Exit P/E (why)</td><td>22x (WPIL range)</td><td>30x (discount to Kirloskar Brothers for size and governance)</td><td>35x (in line with Kirloskar Brothers)</td></tr>
+      <tr><td>Value per share</td><td class="neg"><strong>~₹289 (-47%)</strong></td><td class="M"><strong>~₹522 (-4%)</strong></td><td class="pos"><strong>~₹764 (+40%)</strong></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>The bear case, as a short seller would put it <span class="tag tO">[O]</span></h3>
+    <p>A small company that ties up a lot of cash in operations, priced at 40x earnings. It has just missed guidance by 14%. Its Q1 "recovery" was tariff refunds and other income. Money owed by customers is up a third on flat sales. New capital earns half the headline ROCE. Institutions have left. One more slipped March and the multiple shrinks toward 20-25x.</p>
+    <p class="src">Not enough inputs for a defensible discounted-cash-flow (DCF) value (no sourced cost of capital or long-term assumptions).</p>
+  </div>
+
+  <div class="card conf">Confidence: <span style="color:var(--accent)">MEDIUM</span>. Would rise with a 5-year valuation range and a cash balance for net enterprise value.</div>
+</section>
+
+<!-- ============ PROMOTER ============ -->
+<section class="panel" id="p-promoter">
+  <div class="ptitle"><h2>4. Promoter pedigree</h2><p>Who runs and controls the company, what they have done with their shares, and how they have spent capital.</p></div>
+
+  <div class="card">
+    <h3>Board and management <span class="tag tF">[F]</span></h3>
+    <p>8 board members: Pratik Patel, Suresh Patel and Rahul Patel from the founding (promoter) family, German partner Axel Schuette since 1995, and 4 independent directors.</p>
+    <p>Pratik Patel is Chairman and MD. Suresh Patel is an executive director in charge of manufacturing technology and design <span class="src">(company FAQ, Aug 2026)</span>. The CFO is Dharmendra Jain <span class="src">(Q1FY27 call)</span>.</p>
+    <p>Fuller backgrounds, prior ventures and CFO tenure: <span class="na">NOT DISCLOSED</span> in the sources available (needs annual-report director profiles).</p>
+  </div>
+
+  <div class="card">
+    <h3>Promoter holding and pledge <span class="tag tF">[F]</span></h3>
+    <p class="src">Screener, quarter-end promoter holding %.</p>
+    <div class="chartbox"><canvas id="promChart"></canvas></div>
+    <div class="tw"><table>
+      <tr><th>Sep-23</th><th>Dec-23</th><th>Mar-24</th><th>Jun-24</th><th>Sep-24</th><th>Dec-24</th><th>Mar-25</th><th>Jun-25</th><th>Sep-25</th><th>Dec-25</th><th>Mar-26</th><th>Jun-26</th></tr>
+      <tr><td>50.98%</td><td>50.98%</td><td>49.44%</td><td class="neg">43.65%</td><td>43.61%</td><td>43.52%</td><td>43.39%</td><td>43.39%</td><td>43.40%</td><td>43.43%</td><td>43.24%</td><td>43.24%</td></tr>
+    </table></div>
+    <p><strong>Pledge (shares given as loan security):</strong> promoters and the promoter group did not encumber any shares, directly or indirectly, during FY26, so <span class="pos mono">0%</span>.</p>
+    <div class="callout red"><strong>The 5.8-point fall in promoter holding in the June 2024 quarter has no explanation in any source available (red flag; needs the shareholding-pattern and SAST filings).</strong></div>
+    <p>Promoter-group sales are on record. For example, Patamin Investments sold 475,000 shares at ₹576.06 on 16 Dec 2024, about ₹27.4 cr. Several family members also sold in Nov 2024 <span class="src">(insiderscreener)</span>.</p>
+    <p>Modest buying since: Pratik Patel bought 10,000 shares at ₹518.70 on 08-Sep-2026, and Rahul Patel bought in Feb 2026.</p>
+    <p>The price recorded for the Dec 2025 warrant conversion conflicts: ₹434.80 (Value Research) vs ₹305.50 (insiderscreener). <span class="tag tE">[E]</span> ₹305.50 equals the ₹1,527.50 warrant price adjusted for the 1:5 share split, so that figure is used.</p>
+  </div>
+
+  <div class="card">
+    <h3>Institutions have left <span class="tag tF">[F]</span></h3>
+    <p>Domestic institutions (DIIs) went from 4.03% to 0.32%, mutual funds hold 0%, and the number of shareholders went from 6,227 to 47,080 <span class="src">(Screener, Value Research)</span>.</p>
+    <div class="callout"><strong>The shareholder register has moved from institutions to retail investors.</strong></div>
+    <p>Deals with related parties, management pay as % of PAT, contingent liabilities (possible future claims): <span class="na">NOT AVAILABLE</span> (FY26 annual report could not be fetched).</p>
+  </div>
+
+  <div class="card">
+    <h3>How capital has been spent <span class="tag tF">[F]</span></h3>
+    <p>Acquisitions: Rodney Hunt (US), Mahr (Austria), Waterfront (80% for no more than £2m, 2023), WesTech India (80%), and Penstocks UK (£550,000, Apr 2026, per Reuters via Zerodha). Outcomes are mixed:</p>
+    <ul>
+      <li class="pos">Waterfront turned profitable in Q1FY27.</li>
+      <li class="neg">Rodney Hunt profit fell 44% in FY26 and it lost ₹7 cr in Q1FY27.</li>
+      <li class="neg">WesTech India was bought with ₹55 cr revenue and ₹4 cr profit (AlphaSpread). Within about a year it was losing orders because of costing and marketing problems.</li>
+    </ul>
+    <p>Equity: a preferential share issue in Jan 2024 at ₹1,527.50 per share before the split, including warrants (rights to buy shares later) to the promoter. Dividend payout is steady at 13-14% of profit <span class="src">(Screener)</span>. Write-downs: <span class="na">NOT AVAILABLE</span>.</p>
+  </div>
+
+  <div class="card">
+    <h3>Governance events</h3>
+    <ul>
+      <li>Deloitte Haskins &amp; Sells was appointed statutory auditor at the 2022 AGM for five years, replacing Walker Chandiok <span class="src">(AGM notice 2022)</span>. Rotation is due at the 53rd AGM in 2027. No auditor resignation found.</li>
+      <li>In the Q1FY27 review, results of one subsidiary and one step-down subsidiary were not reviewed by their auditors, but were deemed immaterial.</li>
+      <li>CRISIL withdrew its credit ratings at the company's request in March 2024. No current public credit rating was found.</li>
+      <li>No adverse SEBI, SAT or court record was found in the web searches made (two targeted queries). That is not the same as a clean bill of health.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Behaviour on earnings calls</h3>
+    <p>Credit where due: management openly admitted the losses at the process-equipment unit.</p>
+    <p>On the other hand, revenue guidance was cut three times in FY26, and each cut was blamed on outside events. Metrics they stopped disclosing: <span class="na">NOT AVAILABLE</span> (needs a side-by-side read of the transcripts).</p>
+  </div>
+
+  <div class="card">
+    <h3>Would I trust them with my own money? <span class="tag tO">[O]</span></h3>
+    <p><strong>Partly.</strong></p>
+    <p class="pos">Positives: zero pledge, open admissions, some promoter buying.</p>
+    <p class="neg">Against: an unexplained drop in holdings, well-timed promoter selling near ₹576-591 in late 2024, a self-requested rating withdrawal, aggressive long-range targets and a poor FY26 forecasting record.</p>
+    <div class="callout"><strong>I would trust them to run the plants, not their forecasts.</strong></div>
+  </div>
+
+  <div class="card conf">Confidence: <span style="color:var(--red)">LOW</span>. Would rise with the FY26 annual report (related-party deals, pay, contingent liabilities) and the shareholding filings for June 2024.</div>
+</section>
+
+<!-- ============ RISKS ============ -->
+<section class="panel" id="p-risks">
+  <div class="ptitle"><h2>5. Risks</h2><p>How this could go wrong, the full risk list, red flags found, and dates to watch.</p></div>
+
+  <div class="card">
+    <h3>a. Pre-mortem: it is April 2028 and the stock is down 50%. Why?</h3>
+    <ol>
+      <li><strong>FY27 guidance missed for a second year.</strong> Middle East and US shipments slip and March billing disappoints. <em>Early warning:</em> H1FY27 revenue below ₹310 cr. Then Qatar shipments stuck for over 3 months start repeating.</li>
+      <li><strong>Margins never reach 13-14%.</strong> Rodney Hunt and Jash Process Equipment stay loss-making once the tariff refunds run out, PAT stays around ₹80 cr and the P/E falls to ~22x. <em>Early warning:</em> Rodney Hunt quarterly PAT, and gross margin falling below ~55% once refunds lapse.</li>
+      <li><strong>Cash squeeze.</strong> Customers keep taking ~150 days to pay while ₹200 cr of capex is spent, so borrowings climb or new shares are issued (dilution). <em>Early warning:</em> borrowings above ₹150 cr, or a fresh preferential issue or QIP.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h3>b. Risk register</h3>
+    <p class="src">Prob. = probability, H/M/L = high/medium/low.</p>
+    <div class="tw"><table>
+      <tr><th>Risk</th><th>Type</th><th>Prob.</th><th>Impact</th><th>What to watch</th></tr>
+      <tr><td>US tariff and policy changes (35.5% of revenue is US)</td><td>Regulatory / currency</td><td class="H">H</td><td class="H">H</td><td>Tariff level. Sources conflict: about 10% (Q4FY26 newsletter) vs 15% (Tradebrains, May 2026)</td></tr>
+      <tr><td>Gulf/West Asia shipping disruption</td><td>Execution</td><td class="M">M</td><td class="M">M</td><td>Middle East dispatches; held consignments</td></tr>
+      <tr><td>Guidance credibility</td><td>Promoter/governance</td><td class="H">H</td><td class="H">H</td><td>Quarterly run-rate against ₹875 cr</td></tr>
+      <tr><td>Losses at acquired subsidiaries</td><td>Execution</td><td class="M">M</td><td class="M">M</td><td>Jash Process Equipment order intake; Rodney Hunt PAT</td></tr>
+      <tr><td>Customers paying slower (receivable stretch)</td><td>Accounting / liquidity</td><td class="M">M</td><td class="H">H</td><td>Debtor days above 149</td></tr>
+      <tr><td>Earnings flattered by other income and refunds</td><td>Accounting</td><td class="H">H</td><td class="M">M</td><td>Other income as % of PBT</td></tr>
+      <tr><td>Collections from government and municipal clients (sector flag)</td><td>Customer</td><td class="M">M</td><td class="M">M</td><td>Ageing schedule <span class="na">NOT AVAILABLE</span></td></tr>
+      <tr><td>Penalties for late delivery, "liquidated damages" (sector flag)</td><td>Execution</td><td class="L">L-M</td><td class="M">M</td><td>Annual-report contingent liabilities <span class="na">NOT AVAILABLE</span></td></tr>
+      <tr><td>Retail-heavy register, no institutions</td><td>Liquidity</td><td class="M">M</td><td class="M">M</td><td>DII/FII %</td></tr>
+      <tr><td>Customer concentration</td><td>Customer</td><td><span class="na">NOT AVAILABLE</span></td><td>n/a</td><td>Annual report</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>c. Red flags found in this report</h3>
+    <ul class="neg">
+      <li><strong>FY26 revenue missed the original ₹860 cr guidance by 14%, after three successive cuts.</strong></li>
+      <li><strong>Debtor days rose from 112 to 149; money owed by customers up about 33% on flat revenue.</strong></li>
+      <li><strong>Q1FY27 profit before tax was almost entirely other income, helped further by a ₹5.6 cr tariff refund.</strong></li>
+      <li><strong>Underlying Q1FY27 revenue was about 10% lower YoY [E] if the ₹35 cr spill-over is stripped out.</strong></li>
+      <li><strong>Return on new capital of 12-14% against a headline ROCE of 25%.</strong></li>
+      <li><strong>Unexplained 5.8-point drop in promoter holding in Jun-2024; promoter selling in late 2024.</strong></li>
+      <li><strong>DIIs fell from 4.03% to 0.32%; no mutual fund holding.</strong></li>
+      <li><strong>No current credit rating after a self-requested withdrawal in 2024.</strong></li>
+      <li><strong>The newly acquired process-equipment unit lost ₹150-200 cr of orders within months.</strong></li>
+      <li><strong>Tariff-level figures conflict between sources (10% vs 15%).</strong></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>d. What to watch</h3>
+    <div class="tw"><table>
+      <tr><th>When</th><th>Event</th><th>Warning sign</th></tr>
+      <tr><td>~mid-Nov 2026</td><td>Q2FY27 results</td><td>H1 revenue below ₹310 cr, or H1 PAT below ₹25 cr, makes ₹875 cr / ₹100 cr unlikely</td></tr>
+      <tr><td>Nov 2026</td><td>H1FY27 balance sheet</td><td>Debtor days not back below ~120, or borrowings above ₹130 cr</td></tr>
+      <tr><td>Feb 2027</td><td>Q3FY27</td><td>A revised FY27 outlook below ₹800 cr would mean a second consecutive miss</td></tr>
+      <tr><td>Apr 2027</td><td>Business update</td><td>FY27 revenue against ₹875 cr; Rodney Hunt against $35m</td></tr>
+      <tr><td>Monthly</td><td>Order book</td><td>Falling below ₹850 cr would undercut the FY28 path to ~₹1,025 cr</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card conf">Confidence: <span style="color:var(--accent)">MEDIUM</span>. Would rise with the annual-report contingent liabilities and receivable-ageing notes.</div>
+</section>
+
+<!-- ============ SOURCES ============ -->
+<section class="panel" id="p-sources">
+  <div class="ptitle"><h2>Sources</h2><p>Where each number came from, and what could not be checked.</p></div>
+
+  <div class="card">
+    <div class="tw"><table>
+      <tr><th>Source</th><th>Date</th><th>Used for</th></tr>
+      <tr><td>Screener export (consolidated)</td><td>18 Oct 2026</td><td>CMP, market cap, all financial tables, shareholding</td></tr>
+      <tr><td>Equitybulls / ScanX / TipRanks: company business update</td><td>12-13 Apr 2026</td><td>FY26 miss, ₹35 cr spill-over, FY27 guidance</td></tr>
+      <tr><td>Jash investor presentations (May 2025, Aug 2024, Nov 2025), via search snippets</td><td>2024-25</td><td>Earlier guidance, product mix, order books</td></tr>
+      <tr><td>Q2FY25 concall transcript (NSE), snippet</td><td>Nov 2024</td><td>FY25 guidance, Rodney Hunt commentary</td></tr>
+      <tr><td>Yahoo / Multibagg / ScanX / Tradebrains / Whalesbook: Q1FY27 call summaries</td><td>Aug-Oct 2026</td><td>Q1FY27 numbers, guidance, subsidiaries, refunds</td></tr>
+      <tr><td>Value Research / Multibagg FY26 notes</td><td>Jun-Sep 2026</td><td>FY26 margins, entity split, geography</td></tr>
+      <tr><td>Jash company FAQ PDF (snippet)</td><td>Aug 2026</td><td>Board, ₹200 cr capex, 3-shift caveat</td></tr>
+      <tr><td>Sahi news</td><td>Sep-Oct 2026</td><td>Order book ₹937-944 cr, capacity</td></tr>
+      <tr><td>Value Research / Trendlyne / insiderscreener</td><td>2025-26</td><td>Promoter breakdown, insider trades</td></tr>
+      <tr><td>CRISIL rating rationale</td><td>28 Mar 2024</td><td>Rating withdrawal</td></tr>
+      <tr><td>ICICI Direct / Bajaj / Kotak / Value Research</td><td>6-16 Oct 2026</td><td>Peer P/E (conflicting)</td></tr>
+      <tr><td>AGM notice 2022</td><td>Sep 2022</td><td>Auditor appointment</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Coverage gaps</h3>
+    <ul>
+      <li>All BSE/NSE primary documents failed to load: the Aug 2026 and Jun 2026 transcripts, the Aug 2026 investor presentation, and the FY26 and FY24 annual reports. The Feb 2026 transcript also failed. Fetch budget exhausted.</li>
+      <li>As a result these are all <span class="na">NOT AVAILABLE</span>: related-party transactions, management pay, contingent liabilities, the auditor's report, the segment note, customer concentration, any metrics they stopped disclosing, the cash balance (for net debt and EV), the 5-year valuation range, and the reason for the June 2024 promoter decline.</li>
+      <li>Sections 4 (Promoter) and 3 (Valuation) are weakest. Section 2 relies on second-hand summaries of transcripts.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Anti-fabrication contract (the report's rules)</h3>
+    <ol>
+      <li>Every number has a source and a period.</li>
+      <li>If something is not disclosed, it says <span class="na">NOT DISCLOSED</span>. Derived figures are marked <span class="tag tE">[E]</span> and the working is shown.</li>
+      <li>Claims are labelled <span class="tag tF">[F]</span> fact, <span class="tag tE">[E]</span> estimate, <span class="tag tO">[O]</span> opinion.</li>
+      <li>No invented peer multiples, segment splits, backgrounds or capacity figures.</li>
+      <li>Quotes are 15 words or fewer and attributed.</li>
+      <li>Each section ends with a confidence tag.</li>
+      <li>When sources conflict, both are shown, the newer one is used, and unexplained changes go to Risks.</li>
+    </ol>
+  </div>
+</section>
+</main>
+
+<footer>R2R Tutorials - Risks to Reward. For education only, not investment advice. Data as of 18 Oct 2026.</footer>
+
+<script>
+(function () {
+  var drawnCharts = {};
+  var C = { accent: "#f0a500", red: "#ff5964", green: "#37d39b", blue: "#5aa9ff", purple: "#b48cff", muted: "#8a94a6", grid: "#17233b", text: "#e8edf6" };
+  var hasChart = typeof window.Chart !== "undefined";
+  if (hasChart) {
+    Chart.defaults.color = C.muted;
+    Chart.defaults.font.family = "JetBrains Mono, monospace";
+    Chart.defaults.font.size = 11;
+    Chart.defaults.borderColor = C.grid;
+    Chart.defaults.maintainAspectRatio = false;
+  }
+  var years = ["FY17","FY18","FY19","FY20","FY21","FY22","FY23","FY24","FY25","FY26"];
+
+  function mk(id, cfg) {
+    var el = document.getElementById(id);
+    if (!el || !hasChart) { return; }
+    new Chart(el, cfg);
+  }
+
+  var drawers = {
+    sector: function () {
+      mk("geoChart", {
+        type: "doughnut",
+        data: {
+          labels: ["India", "USA", "Far & SE Asia", "Europe & Africa", "Middle East"],
+          datasets: [{ data: [44.5, 35.5, 10.7, 7.3, 2], backgroundColor: [C.accent, C.red, C.blue, C.purple, C.green], borderColor: "#0a1220", borderWidth: 2 }]
+        },
+        options: { plugins: { legend: { position: "bottom" }, tooltip: { callbacks: { label: function (c) { return c.label + ": " + c.parsed + "%"; } } } } }
+      });
+    },
+    growth: function () {
+      mk("annualChart", {
+        type: "bar",
+        data: {
+          labels: years,
+          datasets: [
+            { type: "bar", label: "Revenue (₹ cr)", data: [158,175,248,278,299,368,402,516,735,736], backgroundColor: "rgba(240,165,0,.55)", yAxisID: "y" },
+            { type: "line", label: "PAT (₹ cr)", data: [10,0,8,20,31,32,52,67,87,76], borderColor: C.green, backgroundColor: C.green, yAxisID: "y1", tension: .25 },
+            { type: "line", label: "Cash from ops (₹ cr)", data: [21,-8,18,18,35,14,34,58,55,56], borderColor: C.blue, backgroundColor: C.blue, yAxisID: "y1", borderDash: [4,4], tension: .25 }
+          ]
+        },
+        options: { plugins: { title: { display: true, text: "Revenue, profit and cash (Screener)", color: C.text } }, scales: { y: { position: "left", title: { display: true, text: "Revenue" } }, y1: { position: "right", grid: { drawOnChartArea: false }, title: { display: true, text: "PAT / CFO" } } } }
+      });
+      mk("marginChart", {
+        type: "line",
+        data: {
+          labels: years,
+          datasets: [
+            { type: "line", label: "OPM %", data: [13,5,9,14,17,13,16,19,17,14], borderColor: C.accent, backgroundColor: C.accent, tension: .25 },
+            { type: "line", label: "ROCE %", data: [16,4,13,19,21,17,23,25,25,18], borderColor: C.purple, backgroundColor: C.purple, tension: .25 }
+          ]
+        },
+        options: { plugins: { title: { display: true, text: "Margin and return on capital (%)", color: C.text } }, scales: { y: { beginAtZero: true } } }
+      });
+      mk("qtrChart", {
+        type: "bar",
+        data: {
+          labels: ["Q2FY25","Q3FY25","Q4FY25","Q1FY26","Q2FY26","Q3FY26","Q4FY26","Q1FY27"],
+          datasets: [
+            { type: "bar", label: "Revenue (₹ cr)", data: [139.6,180.7,300.4,127.6,157.5,160.5,290.5,149.9], backgroundColor: "rgba(90,169,255,.55)", yAxisID: "y" },
+            { type: "line", label: "OPM %", data: [17.6,22.5,19.6,-3.2,12.9,10.6,23.7,5.4], borderColor: C.accent, backgroundColor: C.accent, yAxisID: "y1", tension: .2 }
+          ]
+        },
+        options: { scales: { y: { position: "left" }, y1: { position: "right", grid: { drawOnChartArea: false } } } }
+      });
+      mk("obChart", {
+        type: "line",
+        data: {
+          labels: ["1 Apr 24","Nov 24","1 May 25","1 Apr 26","1 May 26","1 Aug 26","1 Oct 26"],
+          datasets: [{ type: "line", label: "Order book (₹ cr)", data: [784,873,838,827,899,932,944], borderColor: C.accent, backgroundColor: "rgba(240,165,0,.15)", fill: true, tension: .2 }]
+        },
+        options: { scales: { y: { suggestedMin: 700 } } }
+      });
+    },
+    valuation: function () {
+      mk("scenChart", {
+        type: "bar",
+        data: {
+          labels: ["Bear", "Base", "Bull"],
+          datasets: [
+            { type: "bar", label: "FY28 value per share (₹) [E]", data: [289, 522, 764], backgroundColor: [C.red, C.accent, C.green] },
+            { type: "line", label: "Today's price ₹545", data: [545, 545, 545], borderColor: C.text, borderDash: [5,5], pointRadius: 0 }
+          ]
+        },
+        options: { scales: { y: { beginAtZero: true } } }
+      });
+    },
+    promoter: function () {
+      mk("promChart", {
+        type: "line",
+        data: {
+          labels: ["Sep-23","Dec-23","Mar-24","Jun-24","Sep-24","Dec-24","Mar-25","Jun-25","Sep-25","Dec-25","Mar-26","Jun-26"],
+          datasets: [{ type: "line", label: "Promoter holding %", data: [50.98,50.98,49.44,43.65,43.61,43.52,43.39,43.39,43.40,43.43,43.24,43.24], borderColor: C.accent, backgroundColor: C.accent, stepped: false, tension: 0 }]
+        },
+        options: { scales: { y: { suggestedMin: 40, suggestedMax: 52 } } }
+      });
+    }
+  };
+
+  function activate(tabId, btn) {
+    var panels = document.querySelectorAll(".panel");
+    for (var i = 0; i < panels.length; i++) { panels[i].classList.remove("active"); }
+    var btns = document.querySelectorAll("#tabs button");
+    for (var j = 0; j < btns.length; j++) { btns[j].classList.remove("active"); }
+    var p = document.getElementById("p-" + tabId);
+    if (p) { p.classList.add("active"); }
+    if (btn) {
+      btn.classList.add("active");
+      if (btn.scrollIntoView) { btn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" }); }
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (!drawnCharts[tabId] && drawers[tabId]) {
+      drawnCharts[tabId] = true;
+      setTimeout(drawers[tabId], 30);
+    }
+  }
+
+  var tabBtns = document.querySelectorAll("#tabs button");
+  for (var k = 0; k < tabBtns.length; k++) {
+    tabBtns[k].addEventListener("click", function () { activate(this.getAttribute("data-tab"), this); });
+  }
+  drawnCharts.sector = true;
+  drawers.sector();
+})();
+</script>
+</body>
+</html>
