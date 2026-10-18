@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- r2r-build:6b2e4baa0bd14901 -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KSH International Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#04080f;--panel:#0a1220;--border:#17233b;--accent:#f0a500;
+  --text:#e8edf6;--muted:#8a94a6;--faint:#5a6577;
+  --red:#ff5964;--green:#37d39b;--blue:#5aa9ff;--purple:#b48cff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--text);font-family:"DM Sans",sans-serif;font-size:15px;line-height:1.6;overflow-x:hidden}
+.mono{font-family:"JetBrains Mono",monospace}
+h1,h2,h3{font-family:"Syne",sans-serif;line-height:1.2}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;background:rgba(4,8,15,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding:0 12px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;background:none;border:none;color:var(--muted);font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.04em;text-transform:uppercase;padding:14px 12px 12px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+@media(min-width:900px){.tabs{justify-content:center;padding:0 24px}.tab{padding:16px 18px 14px}}
+
+/* HEADER */
+header{max-width:1100px;margin:0 auto;padding:22px 16px 8px}
+.ticker{font-family:"JetBrains Mono",monospace;color:var(--accent);font-size:12px;letter-spacing:.1em}
+header h1{font-size:26px;font-weight:800;margin:6px 0 10px}
+header p.lede{color:var(--muted);font-size:14.5px;max-width:820px}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.badge{font-family:"JetBrains Mono",monospace;font-size:11px;padding:5px 10px;border-radius:999px;border:1px solid}
+.b-green{color:var(--green);border-color:rgba(55,211,155,.4);background:rgba(55,211,155,.08)}
+.b-amber{color:var(--accent);border-color:rgba(240,165,0,.4);background:rgba(240,165,0,.08)}
+.b-red{color:var(--red);border-color:rgba(255,89,100,.4);background:rgba(255,89,100,.08)}
+.b-blue{color:var(--blue);border-color:rgba(90,169,255,.4);background:rgba(90,169,255,.08)}
+
+/* KPI */
+.kpis{max-width:1100px;margin:16px auto 0;padding:0 16px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:700px){.kpis{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:1000px){.kpis{grid-template-columns:repeat(6,1fr)}}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.kpi .lbl{color:var(--faint);font-family:"JetBrains Mono",monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em}
+.kpi .val{font-family:"JetBrains Mono",monospace;font-size:19px;font-weight:600;margin-top:4px}
+.kpi .sub{color:var(--muted);font-size:11.5px}
+
+/* MAIN */
+main{max-width:1100px;margin:0 auto;padding:22px 16px 60px}
+.panel{display:none}
+.panel.active{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.sec-title{font-size:22px;font-weight:700}
+.sec-desc{color:var(--muted);font-size:14px;margin:4px 0 18px}
+.grid{display:grid;gap:14px}
+@media(min-width:900px){.g2{grid-template-columns:1fr 1fr}}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+.card h3{font-size:16px;font-weight:700;margin-bottom:8px}
+.card p{color:#cfd6e4;font-size:14.5px}
+.card p+p{margin-top:8px}
+.card ul{padding-left:18px;color:#cfd6e4;font-size:14.5px}
+.card li{margin:6px 0}
+.callout{border-left:3px solid var(--accent);background:rgba(240,165,0,.06);border-radius:0 12px 12px 0;padding:14px 16px;margin-bottom:14px;font-size:14.5px}
+.callout.red{border-color:var(--red);background:rgba(255,89,100,.06)}
+.callout.green{border-color:var(--green);background:rgba(55,211,155,.06)}
+.callout b{color:var(--text)}
+.tag{display:inline-block;font-family:"JetBrains Mono",monospace;font-size:10.5px;padding:2px 8px;border-radius:6px;margin-right:6px;vertical-align:middle}
+.t-green{background:rgba(55,211,155,.12);color:var(--green)}
+.t-red{background:rgba(255,89,100,.12);color:var(--red)}
+.t-amber{background:rgba(240,165,0,.12);color:var(--accent)}
+.t-blue{background:rgba(90,169,255,.12);color:var(--blue)}
+.t-purple{background:rgba(180,140,255,.12);color:var(--purple)}
+.src{color:var(--faint);font-size:12px;font-family:"JetBrains Mono",monospace;margin-top:8px}
+
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:6px}
+table{width:100%;min-width:520px;border-collapse:collapse;font-size:13px}
+th{font-family:"JetBrains Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600}
+td{padding:9px 10px;border-bottom:1px solid rgba(23,35,59,.6);color:#cfd6e4}
+td.num,th.num{text-align:right;font-family:"JetBrains Mono",monospace}
+tr:last-child td{border-bottom:none}
+.pos{color:var(--green)}.neg{color:var(--red)}.amb{color:var(--accent)}
+.chart-box{position:relative;height:280px;margin-top:6px}
+.chart-box.sm{height:240px}
+.gloss{color:var(--muted);font-style:italic}
+footer{text-align:center;color:var(--faint);font-size:11.5px;padding:0 16px 30px;font-family:"JetBrains Mono",monospace}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-tab="snapshot">Snapshot</button>
+    <button class="tab" data-tab="theme">Theme</button>
+    <button class="tab" data-tab="growth">Growth</button>
+    <button class="tab" data-tab="valuation">Valuation</button>
+    <button class="tab" data-tab="promoter">Promoter</button>
+    <button class="tab" data-tab="risks">Risks</button>
+    <button class="tab" data-tab="momentum">Momentum</button>
+  </div>
+</nav>
+
+<header>
+  <div class="ticker">NSE: KSHINTL · DEEP DIVE</div>
+  <h1>KSH International Ltd</h1>
+  <p class="lede">A maker of the copper wires that go inside large power transformers, riding India's multi-year grid-building boom. Sales are growing very fast, but the business keeps using more cash than it brings in.</p>
+  <div class="badges">
+    <span class="badge b-green">Structural tailwind: grid &amp; HVDC capex</span>
+    <span class="badge b-amber">Stage 2 uptrend · corrective phase</span>
+    <span class="badge b-red">Cash conversion is the weak spot</span>
+    <span class="badge b-blue">CARE A / Stable</span>
+  </div>
+</header>
+
+<section class="kpis">
+  <div class="kpi"><div class="lbl">Price</div><div class="val">₹936</div><div class="sub">Listed at ₹384 (Dec 2025)</div></div>
+  <div class="kpi"><div class="lbl">Market cap</div><div class="val">₹6,343 Cr</div><div class="sub">Valuation metrics</div></div>
+  <div class="kpi"><div class="lbl">TTM revenue</div><div class="val">₹3,712 Cr</div><div class="sub pos">+80.7% YoY</div></div>
+  <div class="kpi"><div class="lbl">P/E</div><div class="val">45.6x</div><div class="sub">vs 25.4x 5-yr median</div></div>
+  <div class="kpi"><div class="lbl">FCF yield</div><div class="val neg">-3.6%</div><div class="sub">Cash burn phase</div></div>
+  <div class="kpi"><div class="lbl">Promoter stake</div><div class="val">74.58%</div><div class="sub pos">0% pledged</div></div>
+</section>
+
+<main>
+
+<!-- SNAPSHOT -->
+<section class="panel active" id="snapshot">
+  <h2 class="sec-title">Snapshot</h2>
+  <p class="sec-desc">The whole story in one screen: what's working, what isn't, and what to watch.</p>
+
+  <div class="callout">
+    <b>Bottom line:</b> KSH is a genuine beneficiary of a long, structural boom in transformer and HVDC (high-voltage direct current — long-distance power lines) spending. But profits have grown while cash has not, and at 45.6x earnings the market is paying in advance for that cash problem to get fixed.
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3><span class="tag t-green">BULL CASE</span></h3>
+      <ul>
+        <li>Factory capacity more than doubles by March 2027.</li>
+        <li>Five-year supply framework signed with Hitachi Energy.</li>
+        <li>Credit rating upgraded to CARE A after the IPO cut debt.</li>
+        <li>Rests on ~26% volume growth in FY27 and profit per tonne (EBITDA per tonne) holding near ₹75,000.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="tag t-red">BEAR CASE</span></h3>
+      <ul>
+        <li>Profits have grown, but cash from operations has been negative in 4 of 5 years.</li>
+        <li>The balance sheet leans on short-term bank loans secured against stock and receivables.</li>
+        <li>45.6x P/E with a -3.6% free cash flow yield leaves little room for disappointment.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Three proof points to track every quarter</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Watch item</th><th>Why it matters</th><th>Latest reading</th></tr></thead>
+      <tbody>
+        <tr><td><b>Operating cash flow</b></td><td>Shows whether profits are turning into real cash</td><td class="neg">₹-65 Cr in FY26</td></tr>
+        <tr><td><b>Working capital days</b></td><td>How many days money stays stuck in stock and unpaid bills</td><td class="pos">71 → 60 days (Q1 FY27)</td></tr>
+        <tr><td><b>Supa Phase 2 commissioning</b></td><td>Unlocks the full doubled capacity</td><td class="amb">Remaining machinery by Q4 FY27</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Stock trend in one line</h3>
+    <p>Still in a long-term uptrend (Weinstein Stage 2), but cooling off: about 22% below its 52-week high and below its short-term averages. Reclaiming ₹1,018–1,020 would signal the correction is ending.</p>
+  </div>
+</section>
+
+<!-- THEME -->
+<section class="panel" id="theme">
+  <h2 class="sec-title">Theme: picks-and-shovels on India's transformer boom</h2>
+  <p class="sec-desc">What KSH makes, why customers stick with it, and the demand wave behind it.</p>
+
+  <div class="callout">
+    KSH makes <b>magnet winding wires</b> — the precision copper conductors inside every large transformer, motor and generator. It is India's largest exporter and third-largest maker of these wires, and the <b>only Indian supplier approved by Power Grid</b> for the special conductor (CTC) used in HVDC 400 kV transformers.
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>Revenue mix</h3>
+      <div class="chart-box sm"><canvas id="segChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>The two segments</h3>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Segment</th><th class="num">Share</th><th>Read</th></tr></thead>
+        <tbody>
+          <tr><td><b>Specialized wires</b><br><span class="gloss">CTC, PICC, enameled rectangular — for power transformers, HVDC converters, 765 kV equipment</span></td><td class="num">~75%</td><td>High-barrier core; multi-year customer approvals keep rivals out</td></tr>
+          <tr><td><b>Standard wires</b><br><span class="gloss">Round enameled copper/aluminium — motors, compressors, appliances, EV motors</span></td><td class="num">~25%</td><td>Volume companion; grew 83% YoY in Q1 FY27</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3><span class="tag t-amber">MOAT</span>The CTC advantage</h3>
+      <p>KSH brought CTC (continuously transposed conductor) to India as an import substitute about 20 years ago and still leads. It takes 5–6 precision manufacturing steps versus 2 for ordinary round wire, and makes up over half the specialized wire business.</p>
+    </div>
+    <div class="card">
+      <h3><span class="tag t-green">LOW RISK</span>Copper cost is passed on</h3>
+      <p>Production starts only after a confirmed order (make-to-order). The copper price (LME) and currency moves are passed straight to the customer, so KSH earns a fixed processing margin per tonne with no copper-price bet.</p>
+      <p class="gloss">Management: the copper price is fixed at the start of each order, so there is no real fluctuation for that order.</p>
+    </div>
+    <div class="card">
+      <h3><span class="tag t-blue">CUSTOMERS</span>Sticky blue-chip franchise</h3>
+      <p>120+ manufacturers including Hitachi Energy, Siemens Energy, GE Vernova, ABB and CG Power. Repeat business is above 95%, and the oldest relationship goes back close to 40 years.</p>
+    </div>
+    <div class="card">
+      <h3><span class="tag t-purple">DEMAND</span>The tailwind</h3>
+      <p>Indian transformer makers are expected to nearly triple capacity to 300 GVA by 2027-28, in line with India's ₹9.1 trillion transmission spending plan. Winding-wire order books across the sector stand at ~₹70,000 Cr through FY27.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Credit rating upgrade</h3>
+    <p>In February 2026, CARE upgraded the long-term rating to <b>CARE A; Stable</b> and short-term to <b>CARE A1</b> (from CARE A- / CARE A2), reflecting lower debt after the IPO.</p>
+  </div>
+</section>
+
+<!-- GROWTH -->
+<section class="panel" id="growth">
+  <h2 class="sec-title">Growth: capacity doubling, volumes compounding</h2>
+  <p class="sec-desc">Five years of financials, the capacity build-out, and the new growth levers.</p>
+
+  <div class="card">
+    <h3>Revenue, operating profit (EBITDA) and net profit (₹ Cr)</h3>
+    <div class="chart-box"><canvas id="finChart"></canvas></div>
+    <p class="src">Source: reported financials. Revenue grew from ₹871 Cr (FY22) to ₹3,107 Cr (FY26).</p>
+  </div>
+
+  <div class="card">
+    <h3>Financial trajectory</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Period</th><th class="num">Revenue</th><th class="num">Growth</th><th class="num">EBITDA</th><th class="num">OPM</th><th class="num">PAT</th><th class="num">NPM</th></tr></thead>
+      <tbody>
+        <tr><td>FY22</td><td class="num">871</td><td class="num pos">+85.3%</td><td class="num">57</td><td class="num">5.8%</td><td class="num">29</td><td class="num">3.4%</td></tr>
+        <tr><td>FY23</td><td class="num">1,049</td><td class="num pos">+20.6%</td><td class="num">58</td><td class="num">4.8%</td><td class="num">27</td><td class="num">2.5%</td></tr>
+        <tr><td>FY24</td><td class="num">1,383</td><td class="num pos">+31.8%</td><td class="num">82</td><td class="num">5.2%</td><td class="num">37</td><td class="num">2.7%</td></tr>
+        <tr><td>FY25</td><td class="num">1,928</td><td class="num pos">+39.5%</td><td class="num">137</td><td class="num">6.3%</td><td class="num">68</td><td class="num">3.5%</td></tr>
+        <tr><td>FY26</td><td class="num">3,107</td><td class="num pos">+61.1%</td><td class="num">214</td><td class="num">6.2%</td><td class="num">110</td><td class="num">3.5%</td></tr>
+        <tr><td><b>TTM</b></td><td class="num"><b>3,712</b></td><td class="num pos">+80.7%</td><td class="num">253</td><td class="num">6.1%</td><td class="num">130</td><td class="num">3.5%</td></tr>
+      </tbody>
+    </table></div>
+    <p class="src">OPM = operating profit per ₹100 of sales · NPM = net profit per ₹100 of sales. Q1 FY27: revenue ₹1,164 Cr, PAT ₹42.2 Cr.</p>
+  </div>
+
+  <div class="callout">
+    <b>Thin margins are by design.</b> Copper's cost inflates sales, so the profit share of sales (OPM) sits in a 5–6.5% band. The real yardstick is <b>profit per tonne (EBITDA per tonne)</b>: ₹67,625 in FY26 and ~₹93,000 in Q1 FY27 — above the guided ₹65,000–70,000.
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>Profit per tonne vs guidance (₹)</h3>
+      <div class="chart-box sm"><canvas id="ebtChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Factory usage (utilization)</h3>
+      <div class="chart-box sm"><canvas id="utilChart"></canvas></div>
+      <p class="src">At full run-rate, management sees ₹5,500–6,000 Cr revenue potential at current copper prices.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Capacity doubling</h3>
+    <ul>
+      <li><b>43,445 MTPA</b> (tonnes per year) installed by March 2026 — up 49.6% in one year, after Supa Phase 1 (commissioned Sept 2025) and part of Phase 2.</li>
+      <li><b>~59,045 MTPA</b> once remaining Supa Phase 2 machinery lands by Q4 FY27 — more than double the pre-expansion base.</li>
+      <li>Consent to operate is in hand; the full ~58,000 tonnes is available for the rest of FY27.</li>
+    </ul>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3><span class="tag t-green">CATALYST</span>HVDC orders</h3>
+      <p>Cumulative orders for 37 HVDC transformer windings, including 11 from BHEL for the Khavda/Nagpur project — the first domestic HVDC winding-wire sourcing in four years, and the highest value-add product in the range.</p>
+    </div>
+    <div class="card">
+      <h3><span class="tag t-amber">IN PROGRESS</span>Hitachi Energy framework</h3>
+      <p>A five-year supply framework with Hitachi Energy Global covering Indian and some global plants is signed. Quantity and price terms are still being finalized.</p>
+    </div>
+    <div class="card">
+      <h3><span class="tag t-green">CATALYST</span>Exports re-accelerating</h3>
+      <p>Exports grew 76% YoY in Q1 FY27 (92% in Q4 FY26). Exports are ~27% of revenue versus a 40% historical high; management targets returning there within two years.</p>
+    </div>
+    <div class="card">
+      <h3><span class="tag t-purple">OPTIONALITY</span>EV wires &amp; recycling</h3>
+      <p>Exclusive India licence with HPW Metallwerk for patented PEEK-coated EV motor wires — the highest profit per tonne in the range, lines live around end-Q2 FY27. Plus a 5,000 MTPA copper recycling facility at Chakan, commissioned August 2026.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Guidance scorecard — does management deliver?</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Promise</th><th>Guided</th><th>Outcome</th></tr></thead>
+      <tbody>
+        <tr><td>FY26 PAT growth</td><td>~53%</td><td class="pos">✅ 62% delivered</td></tr>
+        <tr><td>FY26 volume growth</td><td>24%</td><td class="pos">✅ 21% delivered</td></tr>
+        <tr><td>IPO debt repayment</td><td>₹225.98 Cr</td><td class="pos">✅ Delivered early (Dec 2025)</td></tr>
+        <tr><td>EBITDA/tonne sustainability</td><td>₹65,000–70,000</td><td class="pos">✅ Delivered</td></tr>
+        <tr><td>FY27 volume growth</td><td>26%</td><td class="amb">On track</td></tr>
+        <tr><td>Utilization</td><td>85%</td><td class="amb">On track</td></tr>
+        <tr><td>Export share</td><td>40%</td><td class="amb">On track</td></tr>
+        <tr><td>Working-capital reduction</td><td>30–35 days</td><td class="amb">On track</td></tr>
+      </tbody>
+    </table></div>
+    <p class="src">Outcomes as classified in the source report.</p>
+  </div>
+</section>
+
+<!-- VALUATION -->
+<section class="panel" id="valuation">
+  <h2 class="sec-title">Valuation: premium to its own history, discount to the industry</h2>
+  <p class="sec-desc">How expensive the stock is today versus its past and versus peers in the sector.</p>
+
+  <div class="card">
+    <h3>Current vs history vs industry</h3>
+    <div class="chart-box"><canvas id="valChart"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Multiple</th><th class="num">Current</th><th class="num">3-Yr Median</th><th class="num">5-Yr Median</th><th class="num">Industry</th></tr></thead>
+      <tbody>
+        <tr><td>P/E <span class="gloss">(price vs yearly profit)</span></td><td class="num amb">45.6x</td><td class="num">25.4x</td><td class="num">25.4x</td><td class="num">73.4x</td></tr>
+        <tr><td>EV/EBITDA <span class="gloss">(whole-business value vs operating profit)</span></td><td class="num">29.1x</td><td class="num">31.7x</td><td class="num">31.7x</td><td class="num">53.1x</td></tr>
+        <tr><td>P/B <span class="gloss">(price vs book value)</span></td><td class="num">7.8x</td><td class="num">7.2x</td><td class="num">7.2x</td><td class="num">21.1x</td></tr>
+      </tbody>
+    </table></div>
+    <p class="src">PEG 1.31 · FCF yield -3.6% · Market cap ₹6,343 Cr. Source: valuation metrics.</p>
+  </div>
+
+  <div class="grid g2">
+    <div class="callout">
+      <b>Paying up:</b> the stock trades at 1.8x its own historical median P/E even with profits compounding at ~50%+. A PEG of 1.31 (P/E divided by growth) says growth is not fully paying for the price yet.
+    </div>
+    <div class="callout green">
+      <b>The offset:</b> EV/EBITDA of 29.1x is actually <b>below</b> its 31.7x median, reflecting the heavy-investment phase. Earnings <i>quality</i> (thin ~3.5% net margins, negative free cash flow), not earnings quantity, is what holds back a re-rating.
+    </div>
+  </div>
+</section>
+
+<!-- PROMOTER -->
+<section class="panel" id="promoter">
+  <h2 class="sec-title">Promoter &amp; shareholding</h2>
+  <p class="sec-desc">Who owns the company, how committed the founders are, and governance health.</p>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>Shareholding pattern</h3>
+      <div class="chart-box sm"><canvas id="shChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Latest quarter changes</h3>
+      <div class="tbl-wrap"><table style="min-width:320px">
+        <thead><tr><th>Holder</th><th class="num">Holding</th><th class="num">Change</th></tr></thead>
+        <tbody>
+          <tr><td>Promoters (Hegde family)</td><td class="num">74.58%</td><td class="num">0</td></tr>
+          <tr><td>DIIs <span class="gloss">(Indian funds)</span></td><td class="num">7.73%</td><td class="num neg">-3.13 pp</td></tr>
+          <tr><td>FIIs <span class="gloss">(foreign funds)</span></td><td class="num">6.60%</td><td class="num pos">+0.90 pp</td></tr>
+          <tr><td>Retail / Public</td><td class="num">11.08%</td><td class="num">—</td></tr>
+        </tbody>
+      </table></div>
+      <p class="src">Pledged: 0.0%. Source: shareholding pattern.</p>
+    </div>
+  </div>
+
+  <div class="callout green">
+    <b>High skin in the game:</b> a stable 74.58% promoter stake with zero shares pledged as loan collateral.
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3><span class="tag t-green">CLEAN</span>Governance</h3>
+      <ul>
+        <li>Unmodified (clean) audit opinion for FY26.</li>
+        <li>No material related-party transactions.</li>
+        <li>No loans to directors.</li>
+        <li>Simple single-company structure — no subsidiaries.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="tag t-amber">WATCH</span>Leadership changes</h3>
+      <ul>
+        <li>New CEO Hukumchand Lakhotia (ex-CG Power/Schneider) took over in March 2026 after the previous CEO resigned.</li>
+        <li>The Joint MD stepped down in January 2026.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- RISKS -->
+<section class="panel" id="risks">
+  <h2 class="sec-title">Risks: the cash conversion problem</h2>
+  <p class="sec-desc">Why profits on paper haven't turned into cash, and the other risks to watch.</p>
+
+  <div class="callout red">
+    <b>The Achilles heel:</b> cash from operations was negative in 4 of 5 years. Over FY22–FY26, cumulative operating cash flow was <b>₹-70 Cr</b> against cumulative profit of <b>₹286 Cr</b> — a conversion ratio of -0.28x. Fast growth ties up money in unpaid customer bills (receivables) and stock (inventory).
+  </div>
+
+  <div class="card">
+    <h3>Operating cash flow vs profit (₹ Cr)</h3>
+    <div class="chart-box"><canvas id="cashChart"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Period</th><th class="num">OCF</th><th class="num">PAT</th><th class="num">OCF/PAT</th><th class="num">FCF</th></tr></thead>
+      <tbody>
+        <tr><td>FY22</td><td class="num neg">-44</td><td class="num">29</td><td class="num neg">-151.9%</td><td class="num neg">-44</td></tr>
+        <tr><td>FY23</td><td class="num pos">+62</td><td class="num">27</td><td class="num pos">233.3%</td><td class="num pos">+44</td></tr>
+        <tr><td>FY24</td><td class="num neg">-17</td><td class="num">37</td><td class="num neg">-46.1%</td><td class="num neg">-57</td></tr>
+        <tr><td>FY25</td><td class="num neg">-9</td><td class="num">68</td><td class="num neg">-13.9%</td><td class="num neg">-130</td></tr>
+        <tr><td>FY26</td><td class="num neg">-65</td><td class="num">110</td><td class="num neg">-59.0%</td><td class="num neg">-228</td></tr>
+      </tbody>
+    </table></div>
+    <p class="src">OCF = cash from operations · FCF = free cash flow after capex. Source: reported financials.</p>
+  </div>
+
+  <div class="callout green">
+    <b>Fix in motion:</b> management is moving copper buying from 100% advance payment to credit terms, targeting 30–35 net working capital days. Average days improved from 71 to 60 in Q1 FY27.
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3><span class="tag t-red">HIGH</span>Short-term debt reliance</h3>
+      <p>Total borrowings fell to ₹316 Cr in FY26, but current (short-term) borrowings rose to ₹290 Cr — mostly on-demand working capital loans secured against inventory, receivables and liened deposits.</p>
+    </div>
+    <div class="card">
+      <h3><span class="tag t-amber">MEDIUM</span>Customer &amp; sector concentration</h3>
+      <p>Top 10 customers are ~51% of revenue and the power sector dominates. Diversifying via EVs, 24 export countries and cross-selling.</p>
+    </div>
+    <div class="card">
+      <h3><span class="tag t-amber">MEDIUM</span>Copper swings</h3>
+      <p>Passing copper costs to customers removes price risk but not cash risk — sharp copper spikes inflate the money needed to run the business mid-cycle.</p>
+    </div>
+    <div class="card">
+      <h3><span class="tag t-amber">MEDIUM</span>EPCG export obligation</h3>
+      <p>₹201.76 Cr of export obligations starting April 2026 under the duty-saving capital goods scheme (EPCG). ₹33.63 Cr of duty saved is at risk, plus interest and penalties, if unmet.</p>
+    </div>
+    <div class="card">
+      <h3><span class="tag t-blue">FLAG</span>Revenue recognition</h3>
+      <p>The FY26 auditor flagged revenue recognition as a key audit matter for the first time after the IPO.</p>
+    </div>
+  </div>
+</section>
+
+<!-- MOMENTUM -->
+<section class="panel" id="momentum">
+  <h2 class="sec-title">Stock momentum: Stage 2, in a correction</h2>
+  <p class="sec-desc">Where the price sits against its moving averages (MA — average price over a period).</p>
+
+  <div class="callout">
+    <b>Verdict:</b> KSHINTL is in a Weinstein Stage 2 uptrend — price is above rising 30-week and 200-day averages and beating the market. But this is a cooling-off, not a fresh breakout: ~22% off its high, below its 20-day and 50-day averages, RSI near oversold. <b>Reclaiming ₹1,018–1,020 would signal the correction is ending.</b>
+  </div>
+
+  <div class="card">
+    <h3>Price vs moving averages (₹)</h3>
+    <div class="chart-box"><canvas id="maChart"></canvas></div>
+    <p class="src">Source: market prices data.</p>
+  </div>
+
+  <div class="card">
+    <h3>Stage 2 checklist</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Criterion</th><th>Reading</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Price above 30-week SMA</td><td class="mono">₹936.2 vs ₹831.66</td><td class="pos">✅ Passed</td></tr>
+        <tr><td>30W SMA above 40W SMA</td><td class="mono">₹831.66 vs ₹716.66</td><td class="pos">✅ Rising long-term trend</td></tr>
+        <tr><td>Price above 200-day SMA</td><td class="mono">₹936.2 vs ₹694.37</td><td class="pos">✅ Passed</td></tr>
+        <tr><td>Relative strength vs Nifty 500 (26W)</td><td class="mono">CRS +17</td><td class="pos">✅ Outperforming</td></tr>
+        <tr><td>Above short-term MAs (20D/50D)</td><td class="mono">₹936 vs ₹1,020 / ₹1,018</td><td class="neg">❌ Below</td></tr>
+        <tr><td>Distance from 52W high</td><td class="mono">-21.85%</td><td class="neg">❌ Deep pullback</td></tr>
+        <tr><td>14D RSI <span class="gloss">(momentum gauge, 0–100)</span></td><td class="mono">37.14</td><td class="amb">Near oversold</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+</main>
+
+<footer>Dashboard view of the KSH International deep dive · for education, not investment advice</footer>
+
+<script>
+var C = {accent:"#f0a500",text:"#e8edf6",muted:"#8a94a6",faint:"#5a6577",border:"#17233b",red:"#ff5964",green:"#37d39b",blue:"#5aa9ff",purple:"#b48cff"};
+var drawn = {};
+
+if (window.Chart) {
+  Chart.defaults.color = C.muted;
+  Chart.defaults.font.family = "'JetBrains Mono', monospace";
+  Chart.defaults.font.size = 11;
+  Chart.defaults.borderColor = "rgba(23,35,59,.7)";
+  Chart.defaults.maintainAspectRatio = false;
+}
+
+function mk(id, cfg) {
+  var el = document.getElementById(id);
+  if (!el || !window.Chart) return;
+  new Chart(el, cfg);
+}
+
+var chartSets = {
+  theme: function () {
+    mk("segChart", {
+      type: "doughnut",
+      data: {labels: ["Specialized wires", "Standard wires"], datasets: [{data: [75, 25], backgroundColor: [C.accent, C.blue], borderColor: "#0a1220", borderWidth: 3}]},
+      options: {cutout: "62%", plugins: {legend: {position: "bottom"}, tooltip: {callbacks: {label: function (c) { return c.label + ": ~" + c.raw + "%"; }}}}}
+    });
+  },
+  growth: function () {
+    var yrs = ["FY22", "FY23", "FY24", "FY25", "FY26", "TTM"];
+    mk("finChart", {
+      type: "bar",
+      data: {labels: yrs, datasets: [
+        {type: "bar", label: "Revenue", data: [871, 1049, 1383, 1928, 3107, 3712], backgroundColor: "rgba(240,165,0,.75)", yAxisID: "y", borderRadius: 4},
+        {type: "line", label: "EBITDA", data: [57, 58, 82, 137, 214, 253], borderColor: C.blue, backgroundColor: C.blue, yAxisID: "y1", tension: .3},
+        {type: "line", label: "PAT", data: [29, 27, 37, 68, 110, 130], borderColor: C.green, backgroundColor: C.green, yAxisID: "y1", tension: .3}
+      ]},
+      options: {plugins: {legend: {position: "bottom"}}, scales: {
+        y: {position: "left", title: {display: true, text: "Revenue"}},
+        y1: {position: "right", grid: {drawOnChartArea: false}, title: {display: true, text: "EBITDA / PAT"}}
+      }}
+    });
+    mk("ebtChart", {
+      type: "bar",
+      data: {labels: ["Guide low", "Guide high", "FY26", "Q1 FY27"], datasets: [{label: "EBITDA per tonne", data: [65000, 70000, 67625, 93000], backgroundColor: [C.faint, C.faint, C.blue, C.green], borderRadius: 4}]},
+      options: {plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true}}}
+    });
+    mk("utilChart", {
+      type: "bar",
+      data: {labels: ["FY26", "Q1 FY27", "FY28-29 target"], datasets: [{label: "Utilization %", data: [67, 73.5, 85], backgroundColor: [C.blue, C.blue, "rgba(240,165,0,.45)"], borderColor: [C.blue, C.blue, C.accent], borderWidth: 1, borderRadius: 4}]},
+      options: {plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true, max: 100, ticks: {callback: function (v) { return v + "%"; }}}}}
+    });
+  },
+  valuation: function () {
+    mk("valChart", {
+      type: "bar",
+      data: {labels: ["P/E", "EV/EBITDA", "P/B"], datasets: [
+        {label: "Current", data: [45.6, 29.1, 7.8], backgroundColor: C.accent, borderRadius: 4},
+        {label: "5-Yr Median", data: [25.4, 31.7, 7.2], backgroundColor: C.blue, borderRadius: 4},
+        {label: "Industry", data: [73.4, 53.1, 21.1], backgroundColor: C.faint, borderRadius: 4}
+      ]},
+      options: {plugins: {legend: {position: "bottom"}, tooltip: {callbacks: {label: function (c) { return c.dataset.label + ": " + c.raw + "x"; }}}}, scales: {y: {beginAtZero: true, ticks: {callback: function (v) { return v + "x"; }}}}}
+    });
+  },
+  promoter: function () {
+    mk("shChart", {
+      type: "doughnut",
+      data: {labels: ["Promoters", "DIIs", "FIIs", "Retail/Public"], datasets: [{data: [74.58, 7.73, 6.60, 11.08], backgroundColor: [C.accent, C.blue, C.purple, C.green], borderColor: "#0a1220", borderWidth: 3}]},
+      options: {cutout: "62%", plugins: {legend: {position: "bottom"}, tooltip: {callbacks: {label: function (c) { return c.label + ": " + c.raw + "%"; }}}}}
+    });
+  },
+  risks: function () {
+    mk("cashChart", {
+      type: "bar",
+      data: {labels: ["FY22", "FY23", "FY24", "FY25", "FY26"], datasets: [
+        {label: "Operating cash flow", data: [-44, 62, -17, -9, -65], backgroundColor: function (c) { return c.raw < 0 ? C.red : C.green; }, borderRadius: 4},
+        {label: "Net profit (PAT)", data: [29, 27, 37, 68, 110], backgroundColor: "rgba(240,165,0,.6)", borderRadius: 4},
+        {type: "line", label: "Free cash flow", data: [-44, 44, -57, -130, -228], borderColor: C.purple, backgroundColor: C.purple, tension: .3}
+      ]},
+      options: {plugins: {legend: {position: "bottom"}}}
+    });
+  },
+  momentum: function () {
+    var lbls = ["200D SMA", "40W SMA", "30W SMA", "Price", "50D SMA", "20D SMA"];
+    var vals = [694.37, 716.66, 831.66, 936.2, 1018, 1020];
+    mk("maChart", {
+      type: "bar",
+      data: {labels: lbls, datasets: [{label: "₹", data: vals, backgroundColor: lbls.map(function (l) { return l === "Price" ? C.accent : (["50D SMA", "20D SMA"].indexOf(l) > -1 ? "rgba(255,89,100,.65)" : "rgba(55,211,155,.55)"); }), borderRadius: 4}]},
+      options: {indexAxis: "y", plugins: {legend: {display: false}, tooltip: {callbacks: {label: function (c) { return "₹" + c.raw; }}}}, scales: {x: {min: 600}}}
+    });
+  }
+};
+
+function activate(id) {
+  document.querySelectorAll(".tab").forEach(function (t) { t.classList.toggle("active", t.dataset.tab === id); });
+  document.querySelectorAll(".panel").forEach(function (p) { p.classList.toggle("active", p.id === id); });
+  var btn = document.querySelector('.tab[data-tab="' + id + '"]');
+  if (btn) btn.scrollIntoView({behavior: "smooth", inline: "center", block: "nearest"});
+  window.scrollTo({top: 0, behavior: "smooth"});
+  if (!drawn[id] && chartSets[id]) {
+    drawn[id] = true;
+    requestAnimationFrame(function () { chartSets[id](); });
+  }
+}
+
+document.querySelectorAll(".tab").forEach(function (t) {
+  t.addEventListener("click", function () { activate(t.dataset.tab); });
+});
+</script>
+</body>
+</html>
