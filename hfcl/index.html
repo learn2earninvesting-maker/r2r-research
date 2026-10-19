@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- r2r-build:0e0e89c2125d475b -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HFCL Deep Dive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#04080f;--panel:#0a1220;--border:#17233b;--accent:#f0a500;--text:#e8edf6;--muted:#8a94a6;--faint:#5a6577;--red:#ff5964;--green:#37d39b;--blue:#5aa9ff;--purple:#b48cff}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.55;overflow-x:hidden}
+nav{position:sticky;top:0;z-index:100;background:rgba(4,8,15,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:0 0 auto;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.04em;text-transform:uppercase;padding:14px 14px 12px;cursor:pointer;white-space:nowrap}
+nav button.active{color:var(--accent);border-bottom-color:var(--accent)}
+@media(min-width:900px){nav{justify-content:center;padding:0 24px}nav button{padding:16px 18px 14px}}
+header{padding:22px 16px 8px;max-width:1000px;margin:0 auto}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:.12em;text-transform:uppercase}
+h1{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;line-height:1.15;margin:6px 0 8px}
+h2{font-family:'Syne',sans-serif;font-weight:700;font-size:21px;margin-bottom:4px}
+h3{font-family:'Syne',sans-serif;font-weight:600;font-size:16px;margin-bottom:8px}
+.sub{color:var(--muted);font-size:14px}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.badge{font-family:'JetBrains Mono',monospace;font-size:11px;padding:5px 10px;border-radius:20px;border:1px solid}
+.b-green{color:var(--green);border-color:rgba(55,211,155,.4);background:rgba(55,211,155,.08)}
+.b-red{color:var(--red);border-color:rgba(255,89,100,.4);background:rgba(255,89,100,.08)}
+.b-amber{color:var(--accent);border-color:rgba(240,165,0,.4);background:rgba(240,165,0,.08)}
+.b-blue{color:var(--blue);border-color:rgba(90,169,255,.4);background:rgba(90,169,255,.08)}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:12px 16px;max-width:1000px;margin:0 auto}
+@media(min-width:700px){.kpis{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px}
+.kpi .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-family:'JetBrains Mono',monospace}
+.kpi .v{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;margin-top:4px}
+.kpi .d{font-size:12px;color:var(--faint);margin-top:2px}
+main{max-width:1000px;margin:0 auto;padding:8px 16px 60px}
+.panel{display:none}
+.panel.active{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.ph{margin:14px 0 14px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px}
+.card p+p{margin-top:8px}
+.card ul{padding-left:18px}
+.card li{margin-bottom:7px}
+.card li:last-child{margin-bottom:0}
+.callout{border-left:3px solid var(--accent);background:rgba(240,165,0,.06);border-radius:0 12px 12px 0;padding:14px 16px;margin-bottom:12px}
+.callout.red{border-color:var(--red);background:rgba(255,89,100,.06)}
+.callout.green{border-color:var(--green);background:rgba(55,211,155,.06)}
+.callout .t{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;color:var(--accent)}
+.callout.red .t{color:var(--red)}
+.callout.green .t{color:var(--green)}
+.grid2{display:grid;gap:12px}
+@media(min-width:760px){.grid2{grid-template-columns:1fr 1fr}.grid2 .card{margin-bottom:0}.grid2{margin-bottom:12px}}
+.tag{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 8px;border-radius:10px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em}
+.t-green{background:rgba(55,211,155,.12);color:var(--green)}
+.t-blue{background:rgba(90,169,255,.12);color:var(--blue)}
+.t-purple{background:rgba(180,140,255,.12);color:var(--purple)}
+.t-faint{background:rgba(138,148,166,.12);color:var(--muted)}
+.t-red{background:rgba(255,89,100,.12);color:var(--red)}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;min-width:520px;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:12.5px}
+th{text-align:left;color:var(--muted);font-weight:400;font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;border-bottom:1px solid var(--border)}
+td{padding:9px 10px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr.hl td{color:var(--accent)}
+.pos{color:var(--green)}.neg{color:var(--red)}
+.num{font-family:'JetBrains Mono',monospace}
+.src{font-size:11px;color:var(--faint);margin-top:8px;font-family:'JetBrains Mono',monospace}
+.chartbox{position:relative;height:260px}
+.timeline{list-style:none;padding:0!important}
+.timeline li{position:relative;padding-left:18px}
+.timeline li::before{content:'';position:absolute;left:0;top:8px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.risk{display:flex;gap:12px}
+.risk .n{font-family:'JetBrains Mono',monospace;color:var(--red);font-size:13px;flex:0 0 auto;padding-top:2px}
+.pass{color:var(--green);font-weight:600}
+footer{color:var(--faint);font-size:12px;text-align:center;padding:20px 16px 30px}
+</style>
+</head>
+<body>
+
+<nav id="tabs">
+  <button class="active" data-tab="overview">Overview</button>
+  <button data-tab="business">Business</button>
+  <button data-tab="financials">Financials</button>
+  <button data-tab="growth">Theme &amp; Growth</button>
+  <button data-tab="valuation">Valuation</button>
+  <button data-tab="promoter">Promoter</button>
+  <button data-tab="risks">Risks</button>
+  <button data-tab="momentum">Momentum</button>
+</nav>
+
+<header>
+  <div class="eyebrow">Deep Dive · NSE/BSE · Oct 2026</div>
+  <h1>HFCL Ltd</h1>
+  <p class="sub">From cable-laying contractor to a company that makes and sells fibre for AI data centres.</p>
+  <div class="badges">
+    <span class="badge b-green">Best-ever quarter · Q2 FY27</span>
+    <span class="badge b-green">Weinstein Stage 2</span>
+    <span class="badge b-red">Weak cash conversion</span>
+    <span class="badge b-amber">Patchy guidance record</span>
+    <span class="badge b-blue">Analysis, not a recommendation</span>
+  </div>
+</header>
+
+<section class="kpis">
+  <div class="kpi"><div class="l">Share price</div><div class="v">₹268.81</div><div class="d">−2.57% from 52W high</div></div>
+  <div class="kpi"><div class="l">Q2 FY27 revenue</div><div class="v">₹2,542 Cr</div><div class="d pos">+143.6% YoY</div></div>
+  <div class="kpi"><div class="l">Order book</div><div class="v">₹28,911 Cr</div><div class="d">~5.8x FY26 revenue</div></div>
+  <div class="kpi"><div class="l">P/E (trailing)</div><div class="v">46.8x</div><div class="d">5-yr median 38.1x</div></div>
+</section>
+
+<main>
+
+<!-- OVERVIEW -->
+<section class="panel active" id="overview">
+  <div class="ph"><h2>The answer up front</h2><p class="sub">What the report concludes, in one screen.</p></div>
+  <div class="callout green"><div class="t">The bull side</div>
+    HFCL just reported its best quarter ever. Sales were ₹2,542 Cr (up 143.6% from a year ago), profit was ₹394 Cr (up 448%), and it kept ₹24.8 of every ₹100 of sales as operating profit (operating margin, OPM). A global boom in fibre for AI data centres is driving it, and it has ₹28,911 Cr of orders waiting to be delivered (order book).
+  </div>
+  <div class="callout red"><div class="t">The trade-off</div>
+    The company has a long history of missing its own targets (guidance), its business used more cash than it brought in during FY26 (negative operating cash flow), and the promoter/governance record needs watching.
+  </div>
+  <div class="grid2">
+    <div class="card"><span class="tag t-green">For</span>
+      <ul>
+        <li>A real theme shift: AI fibre demand, more export sales, defence as an extra upside (optionality).</li>
+        <li>The numbers back it this time: ₹28,911 Cr of orders, 24.8% OPM.</li>
+        <li>Management now guides for at least 80% sales growth over FY26.</li>
+        <li>The stock is clearly in an uptrend (Stage 2).</li>
+      </ul>
+    </div>
+    <div class="card"><span class="tag t-red">Against</span>
+      <ul>
+        <li>Nine years of profits not turning into cash.</li>
+        <li>Promoter group buying via warrants at ₹74 while the stock trades at ₹269.</li>
+        <li>Large money flows with a weaker subsidiary (related-party transactions).</li>
+        <li>Valuation — 46.8x P/E, 8.4x P/B, negative free cash flow — assumes flawless delivery on the biggest contracts in its history.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout"><div class="t">Bottom line</div>
+    The uptrend (Stage 2) is unambiguous. Whether the business deserves the price the market is paying for it (the multiple) is the open question. This is an analysis, not a buy or sell recommendation.
+  </div>
+</section>
+
+<!-- BUSINESS -->
+<section class="panel" id="business">
+  <div class="ph"><h2>Four engines at different stages</h2><p class="sub">What HFCL makes, and which parts are growing.</p></div>
+  <div class="card">
+    <p>HFCL designs and makes the physical parts of networks — optical fibre, cables, radios, routers and defence electronics — in its own Indian factories. It has deliberately moved away from low-margin "build it for you" contracting (turnkey EPC) towards selling its own products.</p>
+  </div>
+  <div class="card"><h3>Products vs projects — share of revenue</h3><div class="chartbox"><canvas id="chMix"></canvas></div>
+    <div class="src">Products 27% (FY21) → 83% (Q1 FY27). Projects 73% (FY21) → ~38% (FY26).</div></div>
+
+  <div class="card"><span class="tag t-green">Growth engine</span><h3>Optical fibre &amp; cable (OFC)</h3>
+    <ul>
+      <li>India's largest OFC supplier. Makes its own fibre at Hyderabad; fibre capacity doubled to 2.8 crore fibre-km, cable capacity ~4.3 crore fibre-km.</li>
+      <li>One hyperscaler (a giant cloud/data-centre company) contract worth ~USD 1.1 billion (~₹10,159 Cr) over five years locks in roughly half or more of cable capacity. Deliveries began June 2026 at ~USD 200 million a year.</li>
+      <li><b>Moat in Europe:</b> the EU found HFCL was not selling below fair price (no dumping) — the only Indian OFC maker exempt from EU anti-dumping duties.</li>
+      <li><b>Making its own raw material (backward integration):</b> a 300 MT preform plant (preform is the glass rod fibre is drawn from), ₹580 Cr capex, targeted by July 2029. In-house preform cuts fibre cost 18–20%.</li>
+    </ul></div>
+
+  <div class="card"><span class="tag t-blue">Steady</span><h3>Telecom &amp; networking equipment</h3>
+    <ul>
+      <li>Indian-designed IP/MPLS routers (56–800 Gbps), Wi-Fi 6/7 access points, and 5G home-internet boxes (FWA CPE).</li>
+      <li>Routers have won ₹800 Cr+ of BharatNet Phase III orders.</li>
+      <li>R&amp;D centres work with Qualcomm, Broadcom and Intel. Approved for up to ₹652.79 Cr of PLI incentives (a government subsidy linked to output).</li>
+    </ul></div>
+
+  <div class="card"><span class="tag t-purple">Optionality</span><h3>Defence &amp; aerospace</h3>
+    <ul>
+      <li>Own-designed electronic fuzes (NATO certified), thermal weapon sights, surveillance radars, multi-mode hand grenades. Hosur facility running since Dec 2024.</li>
+      <li>Order book ~₹2,300 Cr. Management says it is on track for ~₹500 Cr of defence revenue in FY27.</li>
+      <li>A 1,000-acre Andhra Pradesh defence complex (329 acres allotted) and an aerospace acquisition expected to close this quarter.</li>
+    </ul></div>
+
+  <div class="card"><span class="tag t-faint">Shrinking legacy</span><h3>EPC / system integration</h3>
+    <ul>
+      <li>Has laid over 2,00,000 km of fibre, including the ₹8,098 Cr armed forces network.</li>
+      <li>Fell from 73% of revenue (FY21) to ~38% (FY26). Now mainly a channel to install HFCL's own products.</li>
+    </ul></div>
+</section>
+
+<!-- FINANCIALS -->
+<section class="panel" id="financials">
+  <div class="ph"><h2>A violent inflection</h2><p class="sub">Flat-to-falling for three years, then a sharp turn.</p></div>
+  <div class="callout"><div class="t">The turn</div>
+    Sales fell from ₹4,727 Cr (FY22) to ₹4,065 Cr (FY25) and margin shrank to 11.1%. FY26 was the turn; FY27 is the breakout.
+  </div>
+  <div class="card"><h3>Revenue and operating margin</h3><div class="chartbox"><canvas id="chFin"></canvas></div><div class="src">Source: reported financials. TTM = last twelve months.</div></div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>Period</th><th>Revenue (₹ Cr)</th><th>Growth</th><th>OPM</th><th>PAT (₹ Cr)</th><th>NPM</th></tr></thead>
+    <tbody>
+      <tr><td>FY24</td><td>4,465</td><td class="neg">−5.9%</td><td>13.0%</td><td>338</td><td>7.6%</td></tr>
+      <tr><td>FY25</td><td>4,065</td><td class="neg">−9.0%</td><td>11.1%</td><td>173</td><td>4.3%</td></tr>
+      <tr><td>FY26</td><td>4,949</td><td class="pos">+21.8%</td><td>15.4%</td><td>329</td><td>6.7%</td></tr>
+      <tr><td>TTM</td><td>7,492</td><td class="pos">+101.0%</td><td>21.2%</td><td>927</td><td>12.4%</td></tr>
+      <tr class="hl"><td>Q2 FY27</td><td>2,542</td><td>+143.6%</td><td>24.8%</td><td>394</td><td>15.5%</td></tr>
+    </tbody></table></div>
+    <div class="src">PAT = profit after tax. NPM = net profit margin (profit kept per ₹100 of sales).</div></div>
+
+  <div class="grid2">
+    <div class="card"><h3>Quarterly ramp</h3>
+      <ul>
+        <li>Sales growth vs a year ago: Q4 FY26 <span class="pos num">+127.8%</span>, Q1 FY27 <span class="pos num">+119.8%</span>, Q2 FY27 <span class="pos num">+143.6%</span>.</li>
+        <li>Operating margin went from 3.3% (Q1 FY26) to 24.8% (Q2 FY27).</li>
+        <li>H1 FY27 profit ₹640 Cr, up 1,401% from ₹42.6 Cr.</li>
+      </ul></div>
+    <div class="card"><h3>Guidance raised twice</h3>
+      <ul>
+        <li>To 40% growth in early October.</li>
+        <li>Then to "at least 80% over FY26" with Q2 results on 19 Oct 2026.</li>
+        <li>The ₹10,000 Cr revenue milestone, targeted for FY29, is now expected "much earlier".</li>
+      </ul></div>
+  </div>
+
+  <div class="card"><h3>Balance sheet stretched to fund growth</h3>
+    <ul>
+      <li>Total borrowings (gross debt) rose from ₹748 Cr (FY23) to ₹1,896 Cr (FY26). Net debt ₹1,428 Cr.</li>
+      <li>Debt is 0.39x of shareholders' money (D/E). Return on capital (ROCE) recovered to 9.9% in FY26.</li>
+    </ul></div>
+
+  <div class="card"><h3>Credit ratings — a steady upgrade path</h3>
+    <ul class="timeline">
+      <li><span class="num">Sep 2021</span> — long-term rated CARE A-; Negative.</li>
+      <li><span class="num">Mar 2022</span> — upgraded to CARE A; Stable. Short-term to CARE A2+.</li>
+      <li><span class="num">Jul 2023</span> — short-term to CARE A1; long-term reaffirmed CARE A; Stable. NCD rating withdrawn after full repayment.</li>
+      <li><span class="num">Jul 2026</span> — subsidiary HTL upgraded from CARE BBB+ to CARE A (CE); Positive, citing a stronger credit profile and improving business.</li>
+      <li>CRISIL's role is ESG-only: "Crisil ESG 55" for FY25, upgraded to 58 (Adequate) in Sep 2026.</li>
+    </ul></div>
+</section>
+
+<!-- GROWTH -->
+<section class="panel" id="growth">
+  <div class="ph"><h2>Theme &amp; catalysts</h2><p class="sub">Why demand is rising, and what could drive the next leg.</p></div>
+  <div class="callout"><div class="t">The theme</div>AI data centres have rewired the fibre cycle. Selling more abroad (export mix) is the margin story.</div>
+
+  <div class="card"><h3>Fibre price index (CRU)</h3><div class="chartbox"><canvas id="chCru"></canvas></div>
+    <div class="src">Record low 79 (Mar 2025) → 263 (Mar 2026), after 32 months of decline.</div></div>
+
+  <div class="card"><h3>What's driving demand</h3>
+    <ul>
+      <li><b>AI data centres:</b> Q2 FY27 growth came from AI data-centre demand for optical fibre cable. G.657A2 fibre prices are up 30%+.</li>
+      <li><b>China-plus-one:</b> US tariffs on Chinese fibre make HFCL more competitive. Export orders were ₹12,248 Cr at end-FY26.</li>
+      <li><b>At home:</b> BharatNet Phase III (₹65,000 Cr programme) is underway; Make-in-India defence buying supports the defence business.</li>
+      <li><b>Mix shift:</b> exports rose from 4.5% of revenue (FY21) to 41.4% (FY26), guided to 60–65%. Prices realised expected up ~25% in FY27 on very high fibre-count cables (7,000-fibre developed; 14,000-fibre being commercialised).</li>
+    </ul></div>
+
+  <div class="card"><h3>Exports as % of revenue</h3><div class="chartbox"><canvas id="chExp"></canvas></div><div class="src">Guidance shown as the 60–65% range midpoint band.</div></div>
+
+  <h3 style="margin:18px 0 10px">Catalysts ahead</h3>
+  <div class="card"><span class="tag t-green">Contract</span><h3>The $1.1B hyperscaler deal</h3>
+    <p>~₹10,159 Cr over five years — about 1.7x FY26 revenue — with deliveries from June 2026.</p></div>
+  <div class="card"><span class="tag t-green">Visibility</span><h3>Order book ₹28,911 Cr (Sep 2026)</h3>
+    <p>~5.8x FY26 revenue. Product orders are ~65% of the book vs 22% in FY25; over half of product orders are exports.</p></div>
+  <div class="card"><span class="tag t-blue">Capacity</span><h3>Expansion</h3>
+    <ul>
+      <li>Fibre capacity to 3.4 crore fkm and cable to 4.3 crore fkm by Dec 2026.</li>
+      <li>IBR cable (the format hyperscale data centres use) expanding from 0.17 to 1.9 crore fkm.</li>
+      <li>~₹1,800 Cr announced across fibre, cable and preform.</li>
+    </ul></div>
+  <div class="card"><span class="tag t-blue">New line</span><h3>Data-centre connectivity</h3>
+    <p>₹215 Cr facility for 2,70,000 assemblies a year by Sep 2027. ~₹850 Cr of orders in hand; FY27 revenue guided at ~₹800 Cr.</p></div>
+  <div class="card"><span class="tag t-purple">Optionality</span><h3>Defence ramp</h3>
+    <p>₹500 Cr FY27 aspiration; ammunition complex groundbreaking in May 2026; aerospace acquisition closing this quarter with a ₹2,000 Cr+ order book.</p></div>
+  <div class="card"><span class="tag t-blue">Margin lever</span><h3>Preform plant</h3>
+    <p>300 MT plant by July 2029 cuts fibre cost 18–20% while preform prices are rising 20–25%.</p></div>
+
+  <div class="callout red"><div class="t">Credibility caveat</div>
+    Of 47 tracked guidance items, FY24–FY25 saw repeated misses: FY25 growth guided 25–30%, delivered −9%; FY25 OFC guided ₹2,000 Cr, delivered ~₹1,100–1,200 Cr; FY26 defence guided ₹200+ Cr, delivered ₹77 Cr; Poland plant put on hold. FY27's targets are far bigger — execution is the bet.
+  </div>
+</section>
+
+<!-- VALUATION -->
+<section class="panel" id="valuation">
+  <div class="ph"><h2>Priced for the pivot to work</h2><p class="sub">How much the market pays today vs history and the industry.</p></div>
+  <div class="card"><h3>Multiples: now vs history vs industry</h3><div class="chartbox"><canvas id="chVal"></canvas></div></div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>Multiple</th><th>Current</th><th>3-Yr median</th><th>5-Yr median</th><th>Industry</th></tr></thead>
+    <tbody>
+      <tr><td>P/E</td><td>46.8x</td><td>49.7x</td><td>38.1x</td><td>68.9x</td></tr>
+      <tr><td>EV/EBITDA</td><td>25.6x</td><td>31.6x</td><td>31.6x</td><td>40.4x</td></tr>
+      <tr><td>P/B</td><td>8.4x</td><td>5.9x</td><td>5.9x</td><td>3.8x</td></tr>
+    </tbody></table></div>
+    <div class="src">PEG 2.01 · FCF yield −1.5% · Source: valuation metrics.</div></div>
+  <div class="card"><h3>What the multiples say</h3>
+    <ul>
+      <li><b>Price vs profit (P/E) 46.8x:</b> below its 3-year median but well above the 5-year median of 38.1x. ET quotes 64x vs a 5-year average of 39x on its own basis.</li>
+      <li><b>Price vs book value (P/B) 8.4x:</b> more than double the industry's 3.8x. The market is paying for the shift to products, not for the assets.</li>
+      <li><b>Free cash flow yield −1.5%:</b> current earnings aren't yet cash, so the price rests entirely on FY27–29 delivery.</li>
+      <li>Nuvama models revenue / EBITDA / profit growing at 39% / 68% / 92% a year (CAGR) over FY26–29.</li>
+    </ul></div>
+  <div class="callout"><div class="t">Takeaway</div>Cheaper than the industry on P/E and EV/EBITDA, but very expensive on book value, with no free cash yet. You are paying for future delivery.</div>
+</section>
+
+<!-- PROMOTER -->
+<section class="panel" id="promoter">
+  <div class="ph"><h2>Promoter &amp; governance</h2><p class="sub">Low stake, rising insider buying, clean audits — with friction points.</p></div>
+  <div class="card"><h3>Shareholding</h3><div class="chartbox"><canvas id="chHold"></canvas></div>
+    <div class="src">Promoter 28.29% (down 1.72% over the year) · FII 17.24% · DII 10.38% · Rest = public/others. Source: latest market data.</div></div>
+  <div class="grid2">
+    <div class="card"><span class="tag t-green">Positive</span><h3>Pledge &amp; audits</h3>
+      <ul>
+        <li>Shares pledged by promoters (pledge) at 2.08%, down from a historical peak of 57.86%.</li>
+        <li>Clean (unqualified) joint-audit opinions every year FY2020–FY2026; no fraud or wilful-default findings.</li>
+      </ul></div>
+    <div class="card"><span class="tag t-blue">Watch</span><h3>Promoter warrants</h3>
+      <ul>
+        <li>7,50,00,000 warrants allotted at ₹74 each on 25 May 2026, all still outstanding.</li>
+        <li>They lapse if the balance 75% isn't paid within 18 months.</li>
+      </ul></div>
+  </div>
+  <div class="callout red"><div class="t">Governance friction</div>
+    <ul style="padding-left:18px">
+      <li>Limits for dealings with 74%-owned subsidiary HTL (related-party transactions) being raised to ₹4,600 Cr (FY27) and ₹5,900 Cr (FY28).</li>
+      <li>Public institutions voted 68% against a related-party resolution in FY22, and ~33% against a director's re-appointment in 2024.</li>
+      <li>HFCL Advance Systems (the defence vehicle) is only 51% owned; the rest is held by individuals including Mr. Anant Nahata.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- RISKS -->
+<section class="panel" id="risks">
+  <div class="ph"><h2>What can break the story</h2><p class="sub">The issues most likely to derail the thesis.</p></div>
+  <div class="card"><h3>Profit vs cash, FY26 (₹ Cr)</h3><div class="chartbox"><canvas id="chCash"></canvas></div>
+    <div class="src">Same year: ₹550 Cr raised via QIP and a dividend recommended.</div></div>
+  <div class="card risk"><div class="n">01</div><div><h3>Cash conversion is the core problem</h3>
+    <p>Over 9 years, cash from operations (CFO) totalled ₹972 Cr — only 0.50x of total profit. FY26 operating cash flow was −₹378 Cr and free cash flow −₹608 Cr against profit of ₹329 Cr.</p></div></div>
+  <div class="card risk"><div class="n">02</div><div><h3>Money stuck in working capital</h3>
+    <p>Supplier-finance liabilities of ₹434 Cr, with credit periods of 120–240 days vs contractual 30–120. Consolidated debt up from ₹748 Cr to ₹1,713 Cr over three years.</p></div></div>
+  <div class="card risk"><div class="n">03</div><div><h3>Few big customers</h3>
+    <p>The top 3–4 customers make up more than 60% of revenue (Nahata, Q2 FY25 call). Reliance Jio has been a client for 7–8 years.</p></div></div>
+  <div class="card risk"><div class="n">04</div><div><h3>Guidance credibility</h3>
+    <p>A multi-year record of misses across defence, OFC, exports and PLI.</p></div></div>
+  <div class="card risk"><div class="n">05</div><div><h3>Defence is still a promise</h3>
+    <p>FY26 defence revenue ₹77 Cr at a −6.58% PBIT margin (a loss at segment level). Fuzes took five-plus years from "almost developed" to trials. The aerospace acquisition is still pending.</p></div></div>
+  <div class="card risk"><div class="n">06</div><div><h3>Trade &amp; demand risks</h3>
+    <p>The EU exemption was hard-won. Nuvama flags a global slowdown in data-centre spending and preform delays as key risks.</p></div></div>
+  <div class="card risk"><div class="n">07</div><div><h3>Surveillance tag</h3>
+    <p>Exchanges placed HFCL under LT ASM Stage 4 (extra monitoring for abnormal volatility and speculation). The Nivetti stake-sale deadline was extended to 31 Dec 2026.</p></div></div>
+</section>
+
+<!-- MOMENTUM -->
+<section class="panel" id="momentum">
+  <div class="ph"><h2>Firmly in Weinstein Stage 2</h2><p class="sub">Stage 2 = the advancing phase of a stock's price cycle.</p></div>
+  <div class="callout green"><div class="t">Verdict</div>
+    Yes — Stage 2. Price is above every major moving average, the 30-week average sits above the 40-week, the golden cross is 29 weeks old, and the stock beats the Nifty 500 on both 26-week and 12-month relative strength.
+  </div>
+  <div class="card"><h3>Price vs moving averages (₹)</h3><div class="chartbox"><canvas id="chSma"></canvas></div><div class="src">SMA = simple moving average (average price over that period).</div></div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>Check</th><th>Reading</th><th>Stage 2 test</th></tr></thead>
+    <tbody>
+      <tr><td>Price vs 30-week SMA</td><td>₹268.81 vs ₹191.02</td><td class="pass">Pass</td></tr>
+      <tr><td>30W vs 40W SMA</td><td>₹191.02 vs ₹160.54</td><td class="pass">Pass (rising trend)</td></tr>
+      <tr><td>Price vs 200D SMA</td><td>₹268.81 vs ₹151.60</td><td class="pass">Pass</td></tr>
+      <tr><td>Golden cross</td><td>Active, 29 weeks ago</td><td class="pass">Pass</td></tr>
+      <tr><td>Relative strength vs Nifty 500</td><td>26W CRS +34, 12M +8</td><td class="pass">Pass (outperforming)</td></tr>
+      <tr><td>Distance from 52W high / low</td><td>−2.57% / +349%</td><td>Near highs</td></tr>
+    </tbody></table></div><div class="src">Source: latest market data.</div></div>
+  <div class="card"><h3>Returns</h3><div class="chartbox" style="height:200px"><canvas id="chRet"></canvas></div>
+    <div class="src">RSI (14-day) at 62 — strong but not overheated. Near the 52-week high.</div></div>
+  <div class="callout"><div class="t">The line to watch</div>
+    Stage 2 stays valid while price holds above a rising 30-week SMA (now ₹191.02). Other caveats: the LT ASM-4 surveillance tag and how far the run has already gone.
+  </div>
+</section>
+
+</main>
+<footer>Built from the HFCL deep-dive report · Analysis, not investment advice · No figures added beyond the report.</footer>
+
+<script>
+var C = {accent:"#f0a500",text:"#e8edf6",muted:"#8a94a6",faint:"#5a6577",grid:"#17233b",red:"#ff5964",green:"#37d39b",blue:"#5aa9ff",purple:"#b48cff"};
+var drawn = {};
+if (window.Chart) {
+  Chart.defaults.color = C.muted;
+  Chart.defaults.font.family = "'JetBrains Mono', monospace";
+  Chart.defaults.font.size = 11;
+  Chart.defaults.borderColor = C.grid;
+  Chart.defaults.maintainAspectRatio = false;
+}
+function axes(extra) {
+  var o = {x:{grid:{color:C.grid}},y:{grid:{color:C.grid},beginAtZero:true}};
+  if (extra) { for (var k in extra) { o[k] = extra[k]; } }
+  return o;
+}
+var builders = {
+  overview: function(){},
+  business: function(){
+    new Chart(document.getElementById("chMix"), {type:"bar",data:{labels:["FY21","FY26","Q1 FY27"],datasets:[
+      {label:"Products %",data:[27,null,83],backgroundColor:C.accent},
+      {label:"Projects %",data:[73,38,null],backgroundColor:C.faint}]},
+      options:{scales:axes({y:{max:100,grid:{color:C.grid},beginAtZero:true}}),plugins:{legend:{position:"bottom"}}}});
+  },
+  financials: function(){
+    new Chart(document.getElementById("chFin"), {type:"bar",data:{labels:["FY24","FY25","FY26","TTM"],datasets:[
+      {type:"bar",label:"Revenue (₹ Cr)",data:[4465,4065,4949,7492],backgroundColor:C.accent,yAxisID:"y"},
+      {type:"line",label:"OPM %",data:[13.0,11.1,15.4,21.2],borderColor:C.green,backgroundColor:C.green,tension:.3,yAxisID:"y1"}]},
+      options:{scales:{x:{grid:{color:C.grid}},y:{beginAtZero:true,grid:{color:C.grid}},y1:{position:"right",beginAtZero:true,grid:{display:false},ticks:{callback:function(v){return v+"%";}}}},plugins:{legend:{position:"bottom"}}}});
+  },
+  growth: function(){
+    new Chart(document.getElementById("chCru"), {type:"bar",data:{labels:["Mar 2025 (low)","Mar 2026"],datasets:[{label:"CRU fibre price index",data:[79,263],backgroundColor:[C.faint,C.green]}]},
+      options:{scales:axes(),plugins:{legend:{display:false}}}});
+    new Chart(document.getElementById("chExp"), {type:"bar",data:{labels:["FY21","FY26","Guided"],datasets:[{label:"Exports % of revenue",data:[4.5,41.4,[60,65]],backgroundColor:[C.faint,C.accent,"rgba(240,165,0,.35)"]}]},
+      options:{scales:axes({y:{max:70,beginAtZero:true,grid:{color:C.grid},ticks:{callback:function(v){return v+"%";}}}}),plugins:{legend:{display:false}}}});
+  },
+  valuation: function(){
+    new Chart(document.getElementById("chVal"), {type:"bar",data:{labels:["P/E","EV/EBITDA","P/B"],datasets:[
+      {label:"Current",data:[46.8,25.6,8.4],backgroundColor:C.accent},
+      {label:"3-Yr median",data:[49.7,31.6,5.9],backgroundColor:C.blue},
+      {label:"5-Yr median",data:[38.1,31.6,5.9],backgroundColor:C.purple},
+      {label:"Industry",data:[68.9,40.4,3.8],backgroundColor:C.faint}]},
+      options:{scales:axes(),plugins:{legend:{position:"bottom"}}}});
+  },
+  promoter: function(){
+    new Chart(document.getElementById("chHold"), {type:"doughnut",data:{labels:["Promoter","FII","DII","Public / others"],datasets:[{data:[28.29,17.24,10.38,44.09],backgroundColor:[C.accent,C.blue,C.purple,C.faint],borderColor:"#0a1220",borderWidth:2}]},
+      options:{cutout:"62%",plugins:{legend:{position:"bottom"}}}});
+  },
+  risks: function(){
+    new Chart(document.getElementById("chCash"), {type:"bar",data:{labels:["Profit (PAT)","Operating cash flow","Free cash flow"],datasets:[{label:"₹ Cr",data:[329,-378,-608],backgroundColor:[C.green,C.red,C.red]}]},
+      options:{scales:{x:{grid:{color:C.grid}},y:{grid:{color:C.grid}}},plugins:{legend:{display:false}}}});
+  },
+  momentum: function(){
+    new Chart(document.getElementById("chSma"), {type:"bar",data:{labels:["Price","30W SMA","40W SMA","200D SMA"],datasets:[{label:"₹",data:[268.81,191.02,160.54,151.60],backgroundColor:[C.accent,C.blue,C.purple,C.faint]}]},
+      options:{scales:axes(),plugins:{legend:{display:false}}}});
+    new Chart(document.getElementById("chRet"), {type:"bar",data:{labels:["3M","6M","1Y"],datasets:[{label:"Return %",data:[26.1,181.5,256.2],backgroundColor:C.green}]},
+      options:{indexAxis:"y",scales:{x:{beginAtZero:true,grid:{color:C.grid},ticks:{callback:function(v){return v+"%";}}},y:{grid:{display:false}}},plugins:{legend:{display:false}}}});
+  }
+};
+function drawTab(id) {
+  if (drawn[id] || !window.Chart) { return; }
+  drawn[id] = true;
+  builders[id]();
+}
+function showTab(id) {
+  var btns = document.querySelectorAll("#tabs button");
+  for (var i = 0; i < btns.length; i++) {
+    var on = btns[i].getAttribute("data-tab") === id;
+    btns[i].classList.toggle("active", on);
+    if (on) { btns[i].scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"}); }
+  }
+  var panels = document.querySelectorAll(".panel");
+  for (var j = 0; j < panels.length; j++) { panels[j].classList.toggle("active", panels[j].id === id); }
+  window.scrollTo({top:0,behavior:"smooth"});
+  drawTab(id);
+}
+document.getElementById("tabs").addEventListener("click", function(e){
+  var b = e.target.closest("button");
+  if (b) { showTab(b.getAttribute("data-tab")); }
+});
+</script>
+</body>
+</html>
