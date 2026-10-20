@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- r2r-build:88794f34e76b49c3 -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DEE Development Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#04080f;--panel:#0a1220;--border:#17233b;--accent:#f0a500;--text:#e8edf6;--muted:#8a94a6;--faint:#5a6577;--red:#ff5964;--green:#37d39b;--blue:#5aa9ff;--purple:#b48cff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:"DM Sans",sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+nav{position:sticky;top:0;z-index:100;background:rgba(4,8,15,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.tabs{display:flex;overflow-x:auto;scrollbar-width:none;gap:2px;padding:0 8px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;background:none;border:none;color:var(--muted);font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.04em;text-transform:uppercase;padding:14px 12px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+header{padding:22px 16px 8px;max-width:1000px;margin:0 auto}
+.eyebrow{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--faint);letter-spacing:.08em;text-transform:uppercase}
+h1{font-family:Syne,sans-serif;font-weight:800;font-size:26px;line-height:1.15;margin:6px 0 10px}
+h2{font-family:Syne,sans-serif;font-weight:700;font-size:21px;margin-bottom:4px}
+h3{font-family:Syne,sans-serif;font-weight:600;font-size:16px;margin-bottom:8px}
+.lede{color:var(--muted);font-size:14px}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.badge{font-family:"JetBrains Mono",monospace;font-size:11px;padding:4px 9px;border-radius:999px;border:1px solid}
+.b-green{color:var(--green);border-color:rgba(55,211,155,.4);background:rgba(55,211,155,.08)}
+.b-red{color:var(--red);border-color:rgba(255,89,100,.4);background:rgba(255,89,100,.08)}
+.b-amber{color:var(--accent);border-color:rgba(240,165,0,.4);background:rgba(240,165,0,.08)}
+.b-blue{color:var(--blue);border-color:rgba(90,169,255,.4);background:rgba(90,169,255,.08)}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:12px 16px;max-width:1000px;margin:0 auto}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:11px 12px}
+.kpi .l{font-size:11px;color:var(--muted)}
+.kpi .v{font-family:"JetBrains Mono",monospace;font-size:19px;font-weight:600;margin-top:2px}
+.kpi .s{font-size:11px;color:var(--faint)}
+main{max-width:1000px;margin:0 auto;padding:8px 16px 48px}
+.panel{display:none}
+.panel.active{display:block}
+.sec-desc{color:var(--muted);font-size:13px;margin-bottom:14px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:15px;margin-bottom:12px}
+.card p+p{margin-top:8px}
+.card ul{padding-left:18px}
+.card li{margin-bottom:7px}
+.card li:last-child{margin-bottom:0}
+.muted{color:var(--muted)}
+.callout{border-left:3px solid var(--accent);background:rgba(240,165,0,.06);padding:12px 14px;border-radius:0 10px 10px 0;margin-bottom:12px;font-size:14px}
+.callout.red{border-color:var(--red);background:rgba(255,89,100,.06)}
+.callout.green{border-color:var(--green);background:rgba(55,211,155,.06)}
+.callout b{color:var(--text)}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;min-width:460px;font-size:13px}
+th{font-family:"JetBrains Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-align:left;padding:8px;border-bottom:1px solid var(--border);font-weight:400}
+td{padding:9px 8px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td.n{font-family:"JetBrains Mono",monospace;white-space:nowrap}
+.pos{color:var(--green)}.neg{color:var(--red)}.amb{color:var(--accent)}
+.tag{font-family:"JetBrains Mono",monospace;font-size:10px;padding:2px 7px;border-radius:4px;display:inline-block;margin-right:4px}
+.t-pass{background:rgba(55,211,155,.12);color:var(--green)}
+.t-fail{background:rgba(255,89,100,.12);color:var(--red)}
+.t-weak{background:rgba(240,165,0,.12);color:var(--accent)}
+.score{display:grid;grid-template-columns:1fr;gap:8px}
+.srow{display:flex;gap:12px;align-items:flex-start;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px}
+.srow .d{font-family:"JetBrains Mono",monospace;font-size:12px;width:84px;flex:0 0 84px;color:var(--muted);padding-top:2px}
+.srow .r{font-size:14px}
+.chartbox{position:relative;height:260px}
+.seg{border-top:3px solid var(--blue)}
+.seg.core{border-top-color:var(--accent)}
+.seg.new{border-top-color:var(--green)}
+.seg.nc{border-top-color:var(--faint)}
+.seg .k{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--accent);margin-top:8px}
+.grid2{display:grid;grid-template-columns:1fr;gap:12px}
+footer{color:var(--faint);font-size:11px;text-align:center;padding:20px 16px 30px;max-width:1000px;margin:0 auto}
+@media(min-width:700px){.kpis{grid-template-columns:repeat(4,1fr)}.grid2{grid-template-columns:1fr 1fr}.grid2 .card{margin-bottom:0}}
+@media(min-width:900px){.tabs{justify-content:center;padding:0 24px}.tab{padding:15px 16px}h1{font-size:32px}}
+</style>
+</head>
+<body>
+<nav>
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-p="overview">Overview</button>
+    <button class="tab" data-p="theme">Theme</button>
+    <button class="tab" data-p="growth">Growth</button>
+    <button class="tab" data-p="valuation">Valuation</button>
+    <button class="tab" data-p="promoter">Promoter</button>
+    <button class="tab" data-p="risk">Risk</button>
+    <button class="tab" data-p="momentum">Momentum</button>
+  </div>
+</nav>
+
+<header>
+  <div class="eyebrow">Equity Deep Dive · NSE/BSE</div>
+  <h1>DEE Development Engineers Ltd</h1>
+  <p class="lede">A high-pressure piping specialist riding India's power and oil &amp; gas build-out. The business is improving fast, but the stock is in a weak patch and the price already assumes things go right.</p>
+  <div class="badges">
+    <span class="badge b-green">Theme: Strong</span>
+    <span class="badge b-green">Growth: Strong</span>
+    <span class="badge b-amber">Valuation: Stretched</span>
+    <span class="badge b-amber">Promoter: Adequate, flags</span>
+    <span class="badge b-red">Risk: Elevated</span>
+    <span class="badge b-red">Not Stage 2</span>
+  </div>
+</header>
+
+<section class="kpis">
+  <div class="kpi"><div class="l">Market cap</div><div class="v">₹3,958 Cr</div><div class="s">Price ₹526.10</div></div>
+  <div class="kpi"><div class="l">Order book</div><div class="v amb">₹2,428 Cr</div><div class="s">~2 yrs of work</div></div>
+  <div class="kpi"><div class="l">Price ÷ profit (P/E)</div><div class="v">45.4x</div><div class="s">Industry 28.2x</div></div>
+  <div class="kpi"><div class="l">FY26 sales growth</div><div class="v pos">+38%</div><div class="s">₹1,142 Cr</div></div>
+</section>
+
+<main>
+
+<!-- OVERVIEW -->
+<section class="panel active" id="overview">
+  <h2>Overview</h2>
+  <p class="sec-desc">What the company does, and the one-line verdict on each dimension.</p>
+  <div class="callout"><b>Bottom line:</b> a fundamentally improving company at a technically weak moment. Record orders and new capacity support the story, but the share price is below its key trend line and cash generation is poor.</div>
+
+  <div class="card">
+    <h3>What DEE does</h3>
+    <p>DEE builds the high-pressure pipe systems that run inside power stations, refineries and petrochemical plants. It designs, buys, bends, welds, tests and ships custom pipe sections (spools) ready to install.</p>
+    <p class="muted">Founded 1988. Its protection from rivals (moat) is qualification: new customers audit a supplier for up to 24 months, and once approved, DEE tends to stay on their vendor list for a decade or more.</p>
+  </div>
+
+  <h3 style="margin:18px 0 10px">Business segments</h3>
+  <div class="grid2">
+    <div class="card seg core"><h3>Process piping (core)</h3><p class="muted">Custom pipe spools, bends and pressure vessels for power, oil &amp; gas and process industries.</p><div class="k">FY26 core revenue ₹1,086.5 Cr (+46%) · 730+ engineers · ~40% bid win rate</div></div>
+    <div class="card seg"><h3>Heavy fabrication</h3><p class="muted">Wind turbine towers and industrial chimney stacks via DEE Fabricom.</p><div class="k">First tower order ~₹90 Cr · ₹64 Cr for fifteen 3.3 MW towers (June 2026)</div></div>
+    <div class="card seg new"><h3>Seamless pipes (new)</h3><p class="muted">7,000 MTPA Anjar plant making thick-walled alloy pipes (P-91/P-92) for 660/800 MW supercritical boilers.</p><div class="k">Started 19 Mar 2026 · ~₹89.74 Cr invested · NTPC approved · first order ~₹58 Cr</div></div>
+    <div class="card seg nc"><h3>Biomass power (non-core)</h3><p class="muted">8 MW Abohar + 6 MW Muktsar plants, shifting to fuel pellets.</p><div class="k">Tariff raised to ₹5.22/kWh from ₹3.50 · 72,000 MTPA pellet plant live Q1 FY27 · ~₹80 Cr FY27 target</div></div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <h3>Plants</h3>
+    <ul>
+      <li><b>Anjar</b> (30,000 MTPA, near Kandla/Mundra ports) handles oil &amp; gas and export work, freeing Palwal for higher-margin power jobs.</li>
+      <li><b>Thailand</b> (14,500 MTPA) is the export showcase. No expansion planned there; all new capacity goes to India.</li>
+    </ul>
+  </div>
+
+  <h3 style="margin:18px 0 10px">Summary scorecard</h3>
+  <div class="score">
+    <div class="srow"><div class="d">Theme</div><div class="r"><span class="tag t-pass">STRONG</span>Thermal power revival, HRSG/OEM supply chains, backward integration, hydrogen/nuclear optionality</div></div>
+    <div class="srow"><div class="d">Growth</div><div class="r"><span class="tag t-pass">STRONG</span>38% FY26 revenue growth, ₹2,428 Cr order book, Anjar/seamless ramp, ₹1,500 Cr FY27 guidance</div></div>
+    <div class="srow"><div class="d">Valuation</div><div class="r"><span class="tag t-weak">STRETCHED</span>45.4x P/E vs 28.2x industry on 9.2% ROCE; negative FCF yield</div></div>
+    <div class="srow"><div class="d">Promoter</div><div class="r"><span class="tag t-weak">ADEQUATE</span>65.13%, zero pledge, but 5% recent dilution and pay/governance items</div></div>
+    <div class="srow"><div class="d">Risk</div><div class="r"><span class="tag t-fail">ELEVATED</span>Cash conversion, qualified audits, 263-day working capital cycle, concentration</div></div>
+    <div class="srow"><div class="d">Momentum</div><div class="r"><span class="tag t-fail">NOT STAGE 2</span>Below 30-week SMA, -30.8% from high, underperforming; watch for reclaim of ₹586</div></div>
+  </div>
+</section>
+
+<!-- THEME -->
+<section class="panel" id="theme">
+  <h2>Theme</h2>
+  <p class="sec-desc">Engineering-led piping for India's energy spending cycle.</p>
+  <div class="callout green"><b>Core theme:</b> a revival in coal-fired (thermal) power plant building. Announced boiler units exceed the industry's current fabrication capacity, which supports steady orders for DEE.</div>
+  <div class="card">
+    <h3>Design-led, not commodity work</h3>
+    <p>DEE sells guaranteed piping systems and gets each layout approved before cutting any pipe. Getting through the customer's qualification door is the moat.</p>
+  </div>
+  <div class="card">
+    <h3>Thermal power revival</h3>
+    <p>Adani, JSW and L&amp;T are announcing new thermal projects. BHEL's ~53 units of 800/660 MW plus L&amp;T's ~23 units exceed existing industry fabrication capacity.</p>
+  </div>
+  <div class="card">
+    <h3>Global gas-turbine supply chain</h3>
+    <ul>
+      <li>A Reservation Agreement with an international EPC major (Nooter Eriksen) books 60% of Thailand's heat-recovery boiler (HRSG) capacity at a minimum of US$15.27 Mn/year, June 2027 to December 2029.</li>
+      <li>A US$40 Mn+ letter of intent (LOI) from a global equipment maker (OEM) marks entry into global supply chains.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Making its own pipes (backward integration)</h3>
+    <p>The seamless pipe plant replaces pipes earlier imported entirely from China/Europe. It targets ~20% operating margin (EBITDA) at full use, mainly for coal boiler work rather than HRSG.</p>
+  </div>
+  <div class="card">
+    <h3>Energy-transition options</h3>
+    <ul>
+      <li>Hydrogen purification via a 70% stake in Molsieve Designs</li>
+      <li>Carbon-capture piping supplies</li>
+      <li>Nuclear sector entry targeted via an agreement in Q2 FY27</li>
+    </ul>
+  </div>
+</section>
+
+<!-- GROWTH -->
+<section class="panel" id="growth">
+  <h2>Growth</h2>
+  <p class="sec-desc">Financial track record, order book and capacity ramp.</p>
+  <div class="callout green"><b>Visibility:</b> ₹2,428 Cr order book gives nearly two years of work. FY26 operating profit (EBITDA) grew 54.5% to ₹191.2 Cr at a 16.7% margin.</div>
+
+  <div class="card">
+    <h3>Revenue &amp; profit (₹ Cr)</h3>
+    <div class="chartbox"><canvas id="chRev"></canvas></div>
+    <p class="muted" style="font-size:12px;margin-top:8px">FY23 not included in source report.</p>
+  </div>
+
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Period</th><th>Revenue</th><th>Growth</th><th>Net profit</th><th>Net margin</th></tr></thead>
+      <tbody>
+        <tr><td class="n">FY22</td><td class="n">461</td><td class="n neg">-6.9%</td><td class="n">8</td><td class="n">1.8%</td></tr>
+        <tr><td class="n">FY24</td><td class="n">789</td><td class="n pos">+32.5%</td><td class="n">26</td><td class="n">3.3%</td></tr>
+        <tr><td class="n">FY25</td><td class="n">827</td><td class="n pos">+4.9%</td><td class="n">44</td><td class="n">5.3%</td></tr>
+        <tr><td class="n">FY26</td><td class="n">1,142</td><td class="n pos">+38.0%</td><td class="n">77</td><td class="n">6.8%</td></tr>
+        <tr><td class="n">TTM</td><td class="n">1,213</td><td class="n pos">+40.0%</td><td class="n">80</td><td class="n">6.6%</td></tr>
+        <tr><td class="n">Q1 FY27</td><td class="n">294</td><td class="n pos">+31.6%</td><td class="n">16</td><td class="n">5.5%</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <h3 style="margin:18px 0 10px">Growth catalysts</h3>
+  <div class="card"><h3>Order book ₹2,428 Cr</h3><p>FY26 closed at ₹1,940 Cr (+58% YoY) plus ₹211 Cr where DEE is lowest bidder (L1). FY27 new-order guidance is over ₹2,000 Cr; ~₹780 Cr already came in Q1.</p></div>
+  <div class="card"><h3>BPCL order ₹386.82 Cr</h3><p>One of the largest single orders in recent history, delivering by February 2028.</p></div>
+  <div class="card"><h3>Anjar ramp-up</h3><p>~50% of capacity used in Q1 FY27; target 60–65% in FY27 and near 100% by FY28. Peak revenue potential ~₹1,500 Cr from Anjar alone.</p></div>
+  <div class="card"><h3>Seamless pipe plant</h3><p>FY27 use guided at 60–70%, split 50-50 between own use and outside sale. ~₹450 Cr revenue potential at ~20% EBITDA margin and 30–35% return on investment (IRR).</p></div>
+  <div class="card"><h3>GE heat-recovery boilers (HRSG)</h3><p>Agreement for 15–16 units in FY27. Even without new GE orders, DEE is booked for over 1.5 years.</p></div>
+  <div class="card"><h3>Siemens gas-turbine piping</h3><p>10 units FY27, 15 FY28, 25–30 FY29 at ~€1–1.5 Mn each, pending Anjar plant approval.</p></div>
+  <div class="card"><h3>Thailand</h3><p>Practically 100% booked for three years. FY27 revenue target ₹170–200 Cr vs ₹130 Cr last year.</p></div>
+  <div class="card"><h3>Vision 2030 (now pulled to FY29)</h3><p>₹2,500 Cr revenue, 19–20% EBITDA margin, 9–10% net margin, asset turns (sales per ₹1 of assets) ~3.5x.</p></div>
+  <div class="callout red"><b>Watch:</b> ~₹25 Cr of Q1 dispatches slipped to Q2 as Middle East export customers deferred. The ~₹380 Cr GE order had no drawing inputs as of June 2026, so drawing release is the key FY27 swing factor.</div>
+</section>
+
+<!-- VALUATION -->
+<section class="panel" id="valuation">
+  <h2>Valuation</h2>
+  <p class="sec-desc">Priced for execution: the market pays for the FY27–30 turnaround, not today's returns.</p>
+  <div class="callout"><b>Key point:</b> the stock costs 45.4x its profit (P/E), 61% above the industry's 28.2x, while the company earns only 9.2% on capital employed (ROCE) and 8.7% on equity (ROE).</div>
+
+  <div class="card">
+    <h3>Current vs 3-year median vs industry</h3>
+    <div class="chartbox"><canvas id="chVal"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Multiple</th><th>Current</th><th>3-yr median</th><th>Industry</th></tr></thead>
+      <tbody>
+        <tr><td>Price ÷ profit (P/E)</td><td class="n amb">45.4x</td><td class="n">37.5x</td><td class="n">28.2x</td></tr>
+        <tr><td>Firm value ÷ operating profit (EV/EBITDA)</td><td class="n">22.6x</td><td class="n">25.8x</td><td class="n">15.7x</td></tr>
+        <tr><td>Price ÷ book value (P/B)</td><td class="n">3.3x</td><td class="n">4.0x</td><td class="n">2.5x</td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted" style="font-size:13px;margin-top:10px">PEG 0.79 · Free cash flow yield -4.0% · Market cap ₹3,958 Cr</p>
+  </div>
+
+  <div class="card">
+    <h3>PEG looks fair only if growth delivers</h3>
+    <p>A PEG (P/E ÷ growth rate) of 0.79 assumes guidance is met: ₹1,500 Cr revenue and &gt;19% EBITDA margin. A miss on GE drawings or the Anjar ramp would leave little cushion.</p>
+  </div>
+  <div class="card">
+    <h3>Negative free cash flow</h3>
+    <p>The -4.0% free cash flow yield reflects the building phase. The bull case rests on FY27 being the first year of light spending and cash generation from higher plant use (FY27 capex guided at only ₹20–30 Cr).</p>
+  </div>
+</section>
+
+<!-- PROMOTER -->
+<section class="panel" id="promoter">
+  <h2>Promoter</h2>
+  <p class="sec-desc">Who owns and runs the company, and governance flags.</p>
+  <div class="kpis" style="padding:0 0 12px">
+    <div class="kpi"><div class="l">Promoter holding</div><div class="v">65.13%</div><div class="s">was 70.21%</div></div>
+    <div class="kpi"><div class="l">Shares pledged</div><div class="v pos">0%</div><div class="s">none</div></div>
+    <div class="kpi"><div class="l">Preferential issue</div><div class="v">₹300 Cr</div><div class="s">@ ₹502/share</div></div>
+    <div class="kpi"><div class="l">Founded</div><div class="v">1988</div><div class="s">by CMD</div></div>
+  </div>
+  <div class="card">
+    <h3>Krishan Lalit Bansal &amp; family</h3>
+    <p>A mechanical engineer who founded the company in 1988. The family holds 65.13% with nothing pledged.</p>
+  </div>
+  <div class="card">
+    <h3>Stake dilution</h3>
+    <p>Holding fell 5.04% (70.21% → 65.13% over FY26). This partly reflects the ₹300 Cr fresh share issue to select investors (preferential issue) at ₹502/share, completed 8 July 2026. The CMD himself was allotted shares (1.34 crore votes in favour, 0 against).</p>
+  </div>
+  <div class="callout red"><b>Governance flags:</b>
+    <ul style="padding-left:18px;margin-top:6px">
+      <li>Ms. Shikha Bansal's pay raised ~3.1x to ₹1.38 Cr/year from April 2026 (AGM vote due 23 Sep 2026).</li>
+      <li>The CMD's residential house is pledged as security against working-capital loans.</li>
+      <li>₹82 Cr of group guarantees to the Thai subsidiary earn no commission.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- RISK -->
+<section class="panel" id="risk">
+  <h2>Risk</h2>
+  <p class="sec-desc">What could go wrong: cash, audits, working capital, concentration, debt and disputes.</p>
+  <div class="callout red"><b>Biggest risk:</b> profit is not turning into cash. FY26 cash from operations (CFO) was ₹19.55 Cr, only 0.25x the ₹77 Cr net profit.</div>
+
+  <div class="card">
+    <h3>Free cash flow (₹ Cr)</h3>
+    <div class="chartbox" style="height:200px"><canvas id="chFcf"></canvas></div>
+  </div>
+
+  <div class="card"><h3>Cash flow lags profit</h3><p>Free cash flow (FCF) was -₹159 Cr in FY26 and -₹281 Cr in FY25, on capex and inventory build. Money tied up in operations (working capital) is ₹861 Cr; borrowings ₹771 Cr.</p></div>
+  <div class="card"><h3>Auditor reservations two years running</h3><p>S.R. Batliboi qualified the FY25 and FY26 consolidated opinions over an unquantified write-down (impairment) at Malwa Power; ~₹47.6 Cr of assets untested. Management has committed to a clean opinion by Q3 FY27.</p></div>
+  <div class="card"><h3>Slow cash cycle</h3><p>Q1 FY27: 263 days from paying for materials to collecting from customers (cash conversion cycle), vs a 180–200 day target. Days to collect from customers rose from 109 to 123. Eight customers account for 71% of money owed.</p></div>
+  <div class="card"><h3>Client &amp; sector concentration</h3><p>Revenue is concentrated in oil &amp; gas and power. Export customers deferred deliveries in Q1 on Middle East tensions.</p></div>
+  <div class="card"><h3>Debt &amp; credit rating</h3><p>CARE A- / Stable / A2+ reaffirmed on enhanced facilities (long-term limits raised to ₹205 Cr and ₹673 Cr). Net debt ₹718 Cr at Q1 FY27, guided to ₹400–425 Cr by FY27-end after the preferential issue.</p></div>
+  <div class="card"><h3>Legal &amp; tariff disputes</h3><p>PSPCL appeal and APTEL hearings on the Malwa tariff unresolved. A FEMA notice (May 2023) and a CESTAT customs demand (~₹11.2 Cr plus penalty) are pending.</p></div>
+</section>
+
+<!-- MOMENTUM -->
+<section class="panel" id="momentum">
+  <h2>Stock Momentum</h2>
+  <p class="sec-desc">Is the stock in a Stage 2 uptrend (Stan Weinstein framework)?</p>
+  <div class="callout red"><b>Verdict: NOT in Stage 2.</b> The price has broken below its 30-week average and looks like a Stage 3 correction within a larger uptrend, not a full breakdown.</div>
+
+  <div class="card">
+    <h3>Price vs moving averages (₹)</h3>
+    <div class="chartbox"><canvas id="chMa"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Test</th><th>Reading</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Price vs 30-week average</td><td class="n">₹526.10 vs ₹586.24</td><td><span class="tag t-fail">FAIL</span></td></tr>
+        <tr><td>30-week vs 40-week average</td><td class="n">586.24 &gt; 500.82</td><td><span class="tag t-pass">PASS</span></td></tr>
+        <tr><td>Golden cross 10W/30W</td><td class="n">Active, 33 wks</td><td><span class="tag t-pass">PASS</span></td></tr>
+        <tr><td>Price vs 20/50/100-day avg</td><td class="n">Below all (635/638/655)</td><td><span class="tag t-fail">FAIL</span></td></tr>
+        <tr><td>Distance from 52-week high</td><td class="n">-30.8%</td><td><span class="tag t-fail">FAIL</span></td></tr>
+        <tr><td>RSI 14-day</td><td class="n">29.1 (oversold)</td><td><span class="tag t-weak">WEAK</span></td></tr>
+        <tr><td>Relative strength vs Nifty 500 (26W)</td><td class="n">-2</td><td><span class="tag t-fail">FAIL</span></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="card"><h3>Why it fails Stage 2</h3><p>Stage 2 needs price above a rising 30-week average with positive relative strength. Here price is ~10% below the 30-week average, below every daily average, 30.8% off its high, and lagging the Nifty 500 over 26 weeks.</p></div>
+  <div class="card"><h3>Why it is not Stage 4</h3><p>The 30-week average is still above the 40-week, and the golden cross from 33 weeks ago is still active. The long-term uptrend structure is intact.</p></div>
+  <div class="callout green"><b>What to watch:</b> RSI at 29 is oversold (often precedes a bounce). A return to Stage 2 needs price to reclaim the 30-week average (~₹586) with relative strength turning positive.</div>
+  <div class="card"><h3>Catalysts to watch</h3><ul><li>GE drawing releases</li><li>Anjar utilisation</li><li>Clean audit opinion by Q3 FY27</li></ul></div>
+</section>
+
+</main>
+<footer>Built from the DEE Development deep-dive report. Education only, not investment advice. Figures as stated in the source report.</footer>
+
+<script>
+var C = {text:"#e8edf6",muted:"#8a94a6",grid:"#17233b",accent:"#f0a500",green:"#37d39b",red:"#ff5964",blue:"#5aa9ff",purple:"#b48cff"};
+var drawn = {};
+if (window.Chart) {
+  Chart.defaults.color = C.muted;
+  Chart.defaults.font.family = "JetBrains Mono, monospace";
+  Chart.defaults.font.size = 11;
+  Chart.defaults.borderColor = C.grid;
+}
+var charts = {
+  growth: function () {
+    new Chart(document.getElementById("chRev"), {
+      type: "bar",
+      data: {
+        labels: ["FY22", "FY24", "FY25", "FY26", "TTM"],
+        datasets: [
+          {type: "bar", label: "Revenue", data: [461, 789, 827, 1142, 1213], backgroundColor: C.accent, borderRadius: 4, yAxisID: "y"},
+          {type: "line", label: "Net profit", data: [8, 26, 44, 77, 80], borderColor: C.green, backgroundColor: C.green, tension: 0.3, yAxisID: "y1"}
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {legend: {position: "bottom"}},
+        scales: {
+          y: {position: "left", grid: {color: C.grid}, title: {display: true, text: "Revenue"}},
+          y1: {position: "right", grid: {display: false}, title: {display: true, text: "Profit"}}
+        }
+      }
+    });
+  },
+  valuation: function () {
+    new Chart(document.getElementById("chVal"), {
+      type: "bar",
+      data: {
+        labels: ["P/E", "EV/EBITDA", "P/B"],
+        datasets: [
+          {label: "Current", data: [45.4, 22.6, 3.3], backgroundColor: C.accent, borderRadius: 4},
+          {label: "3-yr median", data: [37.5, 25.8, 4.0], backgroundColor: C.blue, borderRadius: 4},
+          {label: "Industry", data: [28.2, 15.7, 2.5], backgroundColor: C.purple, borderRadius: 4}
+        ]
+      },
+      options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: "bottom"}}, scales: {y: {grid: {color: C.grid}}}}
+    });
+  },
+  risk: function () {
+    new Chart(document.getElementById("chFcf"), {
+      type: "bar",
+      data: {
+        labels: ["FY25", "FY26"],
+        datasets: [{label: "Free cash flow", data: [-281, -159], backgroundColor: C.red, borderRadius: 4}]
+      },
+      options: {indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: {legend: {display: false}}, scales: {x: {grid: {color: C.grid}}}}
+    });
+  },
+  momentum: function () {
+    var vals = [526.10, 586.24, 500.82, 635, 638, 655];
+    new Chart(document.getElementById("chMa"), {
+      type: "bar",
+      data: {
+        labels: ["Price", "30W", "40W", "20D", "50D", "100D"],
+        datasets: [{label: "₹", data: vals, backgroundColor: vals.map(function (v, i) { return i === 0 ? C.accent : (v > 526.10 ? C.red : C.green); }), borderRadius: 4}]
+      },
+      options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {display: false}}, scales: {y: {min: 400, grid: {color: C.grid}}}}
+    });
+  }
+};
+function show(id) {
+  document.querySelectorAll(".panel").forEach(function (p) { p.classList.toggle("active", p.id === id); });
+  document.querySelectorAll(".tab").forEach(function (t) {
+    var on = t.getAttribute("data-p") === id;
+    t.classList.toggle("active", on);
+    if (on) { t.scrollIntoView({behavior: "smooth", inline: "center", block: "nearest"}); }
+  });
+  window.scrollTo({top: 0, behavior: "smooth"});
+  if (charts[id] && !drawn[id] && window.Chart) { drawn[id] = true; charts[id](); }
+}
+document.querySelectorAll(".tab").forEach(function (t) {
+  t.addEventListener("click", function () { show(t.getAttribute("data-p")); });
+});
+</script>
+</body>
+</html>
