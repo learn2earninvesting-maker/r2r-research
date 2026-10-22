@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- r2r-build:8428e7db6002450c -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Navin Fluorine Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#04080f;--panel:#0a1220;--border:#17233b;--accent:#f0a500;--text:#e8edf6;--muted:#8a94a6;--faint:#5a6577;--red:#ff5964;--green:#37d39b;--blue:#5aa9ff;--purple:#b48cff}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--text);font-family:"DM Sans",sans-serif;font-size:15px;line-height:1.55;overflow-x:hidden}
+nav{position:sticky;top:0;z-index:100;background:rgba(4,8,15,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding:0 12px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;background:none;border:none;color:var(--muted);font-family:"JetBrains Mono",monospace;font-size:12.5px;letter-spacing:.3px;padding:14px 12px 12px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+header{padding:22px 16px 8px;max-width:1100px;margin:0 auto}
+.eyebrow{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--faint);letter-spacing:1px;text-transform:uppercase}
+h1{font-family:Syne,sans-serif;font-weight:800;font-size:28px;line-height:1.15;margin:6px 0 10px}
+h2{font-family:Syne,sans-serif;font-weight:700;font-size:21px;margin-bottom:4px}
+h3{font-family:Syne,sans-serif;font-weight:600;font-size:16px;margin-bottom:8px}
+.sub{color:var(--muted);font-size:14px;margin-bottom:16px}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+.badge{font-family:"JetBrains Mono",monospace;font-size:11.5px;padding:4px 9px;border-radius:999px;border:1px solid}
+.b-green{color:var(--green);border-color:rgba(55,211,155,.4);background:rgba(55,211,155,.08)}
+.b-amber{color:var(--accent);border-color:rgba(240,165,0,.4);background:rgba(240,165,0,.08)}
+.b-red{color:var(--red);border-color:rgba(255,89,100,.4);background:rgba(255,89,100,.08)}
+.b-blue{color:var(--blue);border-color:rgba(90,169,255,.4);background:rgba(90,169,255,.08)}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:10px 16px 4px;max-width:1100px;margin:0 auto}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:11px 12px}
+.kpi .l{font-size:11px;color:var(--muted);font-family:"JetBrains Mono",monospace;text-transform:uppercase;letter-spacing:.5px}
+.kpi .v{font-family:"JetBrains Mono",monospace;font-size:19px;font-weight:600;margin-top:2px}
+.kpi .n{font-size:11.5px;color:var(--faint)}
+main{max-width:1100px;margin:0 auto;padding:16px 16px 60px}
+.panel{display:none}
+.panel.active{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px}
+.callout{border-left:3px solid var(--accent);background:rgba(240,165,0,.06);border-radius:0 12px 12px 0;padding:12px 14px;margin-bottom:12px;font-size:14.5px}
+.callout.red{border-left-color:var(--red);background:rgba(255,89,100,.06)}
+.callout.green{border-left-color:var(--green);background:rgba(55,211,155,.06)}
+.callout strong{color:var(--text)}
+p{margin-bottom:8px}
+p:last-child{margin-bottom:0}
+.muted{color:var(--muted)}
+.mono{font-family:"JetBrains Mono",monospace}
+.src{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--faint);margin-top:8px}
+ul.clean{list-style:none}
+ul.clean li{padding:9px 0;border-bottom:1px solid var(--border);font-size:14.5px}
+ul.clean li:last-child{border-bottom:none}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px}
+table{width:100%;min-width:480px;border-collapse:collapse;font-size:13.5px}
+th{font-family:"JetBrains Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:left;padding:8px 6px;border-bottom:1px solid var(--border);font-weight:600}
+td{padding:9px 6px;border-bottom:1px solid var(--border);vertical-align:top}
+td.num,th.num{text-align:right;font-family:"JetBrains Mono",monospace}
+tr:last-child td{border-bottom:none}
+.pos{color:var(--green)}.neg{color:var(--red)}.amb{color:var(--accent)}
+.chart-box{position:relative;height:250px;margin-top:6px}
+.grid2{display:grid;grid-template-columns:1fr;gap:12px}
+.cat{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.cat:last-child{border-bottom:none}
+.cat .when{flex:0 0 74px;font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--accent);padding-top:2px}
+.cat .t{font-weight:700;font-size:14.5px}
+.cat .d{font-size:13.5px;color:var(--muted)}
+.check{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--border)}
+.check:last-child{border-bottom:none}
+.check .c1{font-size:14px}
+.check .c2{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--muted)}
+.pill{font-family:"JetBrains Mono",monospace;font-size:11px;padding:3px 8px;border-radius:6px;background:rgba(55,211,155,.12);color:var(--green);flex:0 0 auto}
+.risk{padding:12px 0;border-bottom:1px solid var(--border)}
+.risk:last-child{border-bottom:none}
+.risk .t{font-weight:700;font-size:14.5px;display:flex;gap:8px;align-items:center}
+.sev{font-family:"JetBrains Mono",monospace;font-size:10.5px;padding:2px 7px;border-radius:5px}
+.sev.h{background:rgba(255,89,100,.14);color:var(--red)}
+.sev.m{background:rgba(240,165,0,.14);color:var(--accent)}
+.sev.l{background:rgba(90,169,255,.14);color:var(--blue)}
+.risk .d{font-size:13.5px;color:var(--muted);margin-top:3px}
+.bl-row{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+.bl-row:last-child{border-bottom:none}
+.bl-row .k{flex:0 0 92px;font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--accent);padding-top:2px}
+.bl-row .v{font-size:14px}
+footer{max-width:1100px;margin:0 auto;padding:0 16px 40px;color:var(--faint);font-size:12px}
+@media(min-width:640px){.kpis{grid-template-columns:repeat(4,1fr)}}
+@media(min-width:900px){.tabs{justify-content:center;padding:0 24px}.tab{padding:16px 16px 13px}h1{font-size:36px}.grid2{grid-template-columns:1fr 1fr}.chart-box{height:290px}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-p="overview">Overview</button>
+    <button class="tab" data-p="theme">Business</button>
+    <button class="tab" data-p="growth">Growth</button>
+    <button class="tab" data-p="valuation">Valuation</button>
+    <button class="tab" data-p="owners">Ownership</button>
+    <button class="tab" data-p="risks">Risks</button>
+    <button class="tab" data-p="momentum">Momentum</button>
+  </div>
+</nav>
+
+<header>
+  <div class="eyebrow">Deep Dive · NSE/BSE · Specialty Chemicals</div>
+  <h1>Navin Fluorine International Ltd</h1>
+  <p class="muted" style="font-size:14.5px">Firing on all three businesses after a heavy multi-year build-out of new plants (capex cycle). Business quality is improving fast, but at today's price much of the good news is already paid for.</p>
+  <div class="badges">
+    <span class="badge b-green">Revenue +41% FY26</span>
+    <span class="badge b-green">CARE AA+ (upgraded Aug 2026)</span>
+    <span class="badge b-green">Stage 2 uptrend</span>
+    <span class="badge b-amber">No valuation cushion</span>
+    <span class="badge b-red">Watch: subsidiary debt, customer concentration</span>
+  </div>
+</header>
+
+<section class="kpis">
+  <div class="kpi"><div class="l">Price</div><div class="v">₹7,946.5</div><div class="n">latest close</div></div>
+  <div class="kpi"><div class="l">Market Cap</div><div class="v">₹40,777 Cr</div><div class="n">latest market data</div></div>
+  <div class="kpi"><div class="l">P/E</div><div class="v amb">51.5x</div><div class="n">5-yr median 66.4x</div></div>
+  <div class="kpi"><div class="l">FY26 Revenue</div><div class="v pos">₹3,314 Cr</div><div class="n">+41.0% YoY</div></div>
+  <div class="kpi"><div class="l">Margin (OPM)</div><div class="v pos">34.2%</div><div class="n">Q1 FY27 · FY26 32.6%</div></div>
+  <div class="kpi"><div class="l">ROCE</div><div class="v">18.9%</div><div class="n">FY26 · FY24 10.9%</div></div>
+  <div class="kpi"><div class="l">Debt / Equity</div><div class="v pos">0.32x</div><div class="n">FY25 0.57x</div></div>
+  <div class="kpi"><div class="l">FCF Yield</div><div class="v neg">1.0%</div><div class="n">PEG 2.10</div></div>
+</section>
+
+<main>
+
+<!-- OVERVIEW -->
+<section class="panel active" id="overview">
+  <h2>The verdict</h2>
+  <p class="sub">The whole report in one screen.</p>
+  <div class="callout">
+    <strong>Great business momentum, full price.</strong> FY26 sales jumped 41% to ₹3,314 Cr and the profit kept from each ₹100 of sales (margin) rose to ₹32.6, then ₹34.2 in Q1 FY27. The stock is in a confirmed uptrend. But at 51.5x earnings (P/E) with only a 1.0% free-cash yield, there is no margin of safety at current prices.
+  </div>
+  <div class="card">
+    <h3>Bottom line, pillar by pillar</h3>
+    <div class="bl-row"><div class="k">Theme</div><div class="v">Pure-play fluorine chemistry: a cash-generating refrigerant business funds the faster-growing contract-manufacturing (CDMO) arm, plus a new AI data-centre cooling angle with Chemours.</div></div>
+    <div class="bl-row"><div class="k">Growth</div><div class="v">Revenue +41% in FY26, Q1 FY27 margin 34.2%, and at least five new plant projects starting up between Q2 and Q4 FY27.</div></div>
+    <div class="bl-row"><div class="k">Valuation</div><div class="v">51.5x P/E is cheaper than its own history but level with the industry; PEG 2.10 and 1.0% FCF yield leave no cheapness cushion.</div></div>
+    <div class="bl-row"><div class="k">Promoter</div><div class="v">27.08% holding, zero shares pledged, institutions own over 52%.</div></div>
+    <div class="bl-row"><div class="k">Risk</div><div class="v">AA+ rating upgrade and low debt (D/E 0.32x) are genuine strengths, but debt parked in a subsidiary, three customers each above 10% of sales, and a never-impaired Dewas unit need watching in the FY27 annual report.</div></div>
+    <div class="bl-row"><div class="k">Momentum</div><div class="v">Firmly in Stage 2 (advancing). The current dip is a pullback inside the uptrend; the 30-week average (~₹7,580) is the trend line in the sand.</div></div>
+  </div>
+</section>
+
+<!-- BUSINESS -->
+<section class="panel" id="theme">
+  <h2>Business: three engines</h2>
+  <p class="sub">What Navin makes and who it sells to.</p>
+  <div class="card">
+    <p>Founded in 1967, Navin Fluorine is one of India's leading specialty fluorochemical makers and the flagship of the Padmanabh Mafatlal Group. Plants: Surat and Dahej (Gujarat), Dewas (MP) and Manchester (UK). Strategy is "3P": Product, Platform, Partnerships.</p>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>FY26 revenue mix</h3>
+      <div class="chart-box"><canvas id="cMix"></canvas></div>
+      <div class="src">CDMO shown as approx. balance (~₹550 Cr) per report</div>
+    </div>
+    <div class="card">
+      <h3>Segment table</h3>
+      <div class="tw"><table>
+        <tr><th>Vertical</th><th class="num">FY26 Rev</th><th class="num">YoY</th><th class="num">Share</th></tr>
+        <tr><td>High Performance Products</td><td class="num">₹1,615 Cr</td><td class="num pos">+33.9%</td><td class="num">~49%</td></tr>
+        <tr><td>Specialty Chemicals</td><td class="num">₹1,152 Cr</td><td class="num pos">+43.9%</td><td class="num">~35%</td></tr>
+        <tr><td>CDMO (Navin Molecular)</td><td class="num">~₹550 Cr</td><td class="num pos">+59.4%</td><td class="num">~16%</td></tr>
+      </table></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3><span class="amb">①</span> High Performance Products — the cash cow</h3>
+    <p>Refrigerant gases (R22, R32, and newer low-climate-impact HFOs under the "Mafron" brand) and inorganic fluorides. India's first refrigerant maker, India's first and only HFO producer, and one of the world's largest makers of BF3.</p>
+    <p class="muted">The Dahej HFO plant supplies Honeywell under a seven-year, $410 million contract.</p>
+  </div>
+  <div class="card">
+    <h3><span class="amb">②</span> Specialty Chemicals — contract-anchored</h3>
+    <p>Building blocks (intermediates) for crop-protection and pharma products. Plants are built for specific molecules and specific customers, e.g. a ₹540 Cr Dahej plant with peak revenue potential of ~₹600 Cr a year.</p>
+    <p class="muted">Management has deliberately shifted the mix from pharma toward agrochemicals and crop science.</p>
+  </div>
+  <div class="card">
+    <h3><span class="amb">③</span> CDMO — the growth engine</h3>
+    <p>Manufactures molecules on contract for global drug and crop-science innovators (CDMO). Runs India's only high-pressure fluorination plant meeting global drug-quality rules (cGMP), and serves most of the world's top-20 pharma innovators.</p>
+    <p class="muted">A European CDMO major gives multi-year volume visibility.</p>
+  </div>
+  <div class="callout green">
+    <strong>New theme — AI data-centre cooling.</strong> A Chemours partnership to make Opteon™, a liquid that cools servers by immersion (two-phase immersion cooling) for AI data centres. Navin is Chemours' only manufacturing site for it.
+  </div>
+</section>
+
+<!-- GROWTH -->
+<section class="panel" id="growth">
+  <h2>Growth: from trough to full ramp</h2>
+  <p class="sub">A textbook turnaround after building new plants.</p>
+  <div class="card">
+    <h3>Revenue &amp; profit (₹ Cr) with margin</h3>
+    <div class="chart-box"><canvas id="cFin"></canvas></div>
+    <div class="src">Source: reported financials · Q1 FY27 is a single quarter</div>
+  </div>
+  <div class="card">
+    <div class="tw"><table>
+      <tr><th>Period</th><th class="num">Revenue</th><th class="num">YoY</th><th class="num">OPM</th><th class="num">PAT</th></tr>
+      <tr><td>FY24</td><td class="num">2,065</td><td class="num neg">-0.6%</td><td class="num">19.3%</td><td class="num">271</td></tr>
+      <tr><td>FY25</td><td class="num">2,349</td><td class="num pos">+13.8%</td><td class="num">22.7%</td><td class="num">289</td></tr>
+      <tr><td>FY26</td><td class="num">3,314</td><td class="num pos">+41.0%</td><td class="num">32.6%</td><td class="num">664</td></tr>
+      <tr><td>Q1 FY27</td><td class="num">1,045</td><td class="num pos">+44.1%</td><td class="num">34.2%</td><td class="num">243</td></tr>
+    </table></div>
+    <div class="src">₹ Cr · OPM = operating profit margin · Q1 FY27 PAT +108% YoY</div>
+  </div>
+  <div class="callout green">
+    <strong>Cash has turned.</strong> FY26 cash from operations ₹894 Cr and free cash flow (cash left after capex) ₹408 Cr — versus negative operating cash of ₹64 Cr in FY23.
+  </div>
+  <div class="card">
+    <h3>Catalysts ahead</h3>
+    <div class="cat"><div class="when">Q2 FY27</div><div><div class="t">Chemours liquid-cooling plant</div><div class="d">₹120 Cr facility, 35% funded by Chemours; targets a ~$3 billion liquid-cooling market.</div></div></div>
+    <div class="cat"><div class="when">Q3 FY27</div><div><div class="t">R32 refrigerant expansion</div><div class="d">₹236.5 Cr for 15,000 MTPA extra capacity; peak revenue potential ₹600–825 Cr/yr. Management targets 35–45% under five-year contracts.</div></div></div>
+    <div class="cat"><div class="when">Q3 FY27</div><div><div class="t">Dahej multi-purpose plant debottleneck</div><div class="d">₹75 Cr; supports a novel agrochemical molecule with peak revenue ₹140–160 Cr/yr.</div></div></div>
+    <div class="cat"><div class="when">Q4 FY27</div><div><div class="t">cGMP4 Phase 2 (CDMO)</div><div class="d">₹125 Cr. At guided 3x sales-to-assets (asset turnover) on total ₹288 Cr cGMP4 capex, implies ~₹900 Cr revenue potential.</div></div></div>
+    <div class="cat"><div class="when">Mid-Q4 FY27</div><div><div class="t">Advanced materials capacity</div><div class="d">₹90 Cr approved Aug 2026 to take five lab-qualified products to commercial scale (first phase).</div></div></div>
+    <div class="cat"><div class="when">CY26–FY28</div><div><div class="t">Nectar &amp; Fermion ramps</div><div class="d">Nectar to 75–80% utilisation by end FY28; anchor customer expected to lift ₹300 Cr in CY26. Fermion block at ~70% utilisation; molecule has ~$5 billion peak sales potential.</div></div></div>
+  </div>
+</section>
+
+<!-- VALUATION -->
+<section class="panel" id="valuation">
+  <h2>Valuation: de-rated, not cheap</h2>
+  <p class="sub">What you pay today vs history and peers.</p>
+  <div class="card">
+    <h3>P/E: now vs history vs industry</h3>
+    <div class="chart-box"><canvas id="cPE"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="tw"><table>
+      <tr><th>Multiple</th><th class="num">Current</th><th class="num">3-Yr Med</th><th class="num">5-Yr Med</th><th class="num">Industry</th></tr>
+      <tr><td>Price / Earnings (P/E)</td><td class="num amb">51.5x</td><td class="num">62.6x</td><td class="num">66.4x</td><td class="num">52.0x</td></tr>
+      <tr><td>Enterprise value / Op. profit (EV/EBITDA)</td><td class="num amb">34.3x</td><td class="num">36.5x</td><td class="num">36.5x</td><td class="num">34.3x</td></tr>
+      <tr><td>Price / Book (P/B)</td><td class="num neg">10.3x</td><td class="num">9.5x</td><td class="num">9.5x</td><td class="num">6.0x</td></tr>
+    </table></div>
+    <div class="src">PEG 2.10 · FCF yield 1.0% · Market cap ₹40,777 Cr (latest market data)</div>
+  </div>
+  <div class="card">
+    <ul class="clean">
+      <li><strong>Cheaper than its own past:</strong> 51.5x P/E is well below its 3- and 5-year medians (62.6x / 66.4x), reflecting a sector-wide correction — yet almost exactly at the industry's 52.0x.</li>
+      <li><strong>You're paying for the ramp:</strong> with trailing revenue growing 42% and margins still rising, earnings growth could bring the multiple down on its own.</li>
+      <li><strong>P/B 10.3x vs industry 6.0x</strong> assumes high returns on capital stay high (ROCE 18.9% in FY26, up from 10.9% in FY24).</li>
+    </ul>
+  </div>
+  <div class="callout red">
+    <strong>No margin of safety.</strong> A PEG of 2.10 (price paid relative to growth) and a 1.0% free-cash yield mean the price already assumes execution goes well.
+  </div>
+</section>
+
+<!-- OWNERSHIP -->
+<section class="panel" id="owners">
+  <h2>Ownership</h2>
+  <p class="sub">Low promoter stake, heavy institutional backing.</p>
+  <div class="grid2">
+    <div class="card">
+      <h3>Shareholding (latest)</h3>
+      <div class="chart-box"><canvas id="cOwn"></canvas></div>
+      <div class="src">"Public &amp; others" = balance to 100%</div>
+    </div>
+    <div class="card">
+      <div class="tw"><table style="min-width:300px">
+        <tr><th>Holder</th><th class="num">Stake</th><th class="num">1Y change</th></tr>
+        <tr><td>Promoters</td><td class="num">27.08%</td><td class="num">-0.04%</td></tr>
+        <tr><td>Domestic institutions (DIIs)</td><td class="num">28.70%</td><td class="num muted">—</td></tr>
+        <tr><td>Foreign institutions (FIIs)</td><td class="num">23.38%</td><td class="num muted">—</td></tr>
+      </table></div>
+      <div class="src">Pledged promoter holding: 0%</div>
+    </div>
+  </div>
+  <div class="card">
+    <ul class="clean">
+      <li><strong>Promoter stake is modest</strong> at 27.08%, essentially flat over the year, with no shares pledged as loan collateral.</li>
+      <li><strong>Institutions own over 52%</strong> combined — a strong quality endorsement, but the stock moves with institutional sentiment.</li>
+      <li><strong>₹750 Cr share sale to institutions (QIP)</strong> in July 2025 slightly diluted holders; ₹462.76 Cr of it repaid borrowings of subsidiary NFASL.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- RISKS -->
+<section class="panel" id="risks">
+  <h2>Risks</h2>
+  <p class="sub">Credit profile strong — but read the fine print.</p>
+  <div class="callout green">
+    <strong>Rating upgraded.</strong> In August 2026 CARE upgraded long-term facilities from AA to <span class="mono">AA+ (Stable)</span>; subsidiary NFASL to AA+ (CE) and AA (unsupported). Caps a decade of consistent CARE AA ratings.
+  </div>
+  <div class="card">
+    <h3>Balance sheet</h3>
+    <ul class="clean">
+      <li>Gross debt <span class="mono">₹1,272 Cr</span>; net debt <span class="mono">₹1,175 Cr</span> (down from ₹1,426 Cr in FY25).</li>
+      <li>Debt-to-equity cut to <span class="mono pos">0.32x</span> from 0.57x.</li>
+      <li>All ~₹1,226 Cr of group borrowings sit in wholly owned subsidiary NFASL, secured on its assets and fully guaranteed by the listed parent.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Key risks</h3>
+    <div class="risk"><div class="t"><span class="sev h">HIGH</span>Debt parked in a subsidiary</div><div class="d">Parent guarantees all group debt in NFASL — the same entity receiving parent equity, preference capital and inter-company loans. Parent exposure to NFASL previously exceeded statutory limits (₹2,578 Cr vs ₹1,980 Cr limit, March 2023).</div></div>
+    <div class="risk"><div class="t"><span class="sev h">HIGH</span>Customer concentration deepened</div><div class="d">Three customers each above 10% of consolidated revenue in FY26 (one in FY25). Money owed by customers (receivables) up 47% in two years to ₹752 Cr.</div></div>
+    <div class="risk"><div class="t"><span class="sev m">MED</span>Goodwill / impairment judgement</div><div class="d">₹87.76 Cr goodwill and the Dewas unit tested together, never written down — flagged by the auditor as a Key Audit Matter every year since FY2019.</div></div>
+    <div class="risk"><div class="t"><span class="sev m">MED</span>Raw material &amp; pricing cycles</div><div class="d">Fluorspar prices have risen over time; refrigerant prices depend on quotas and Chinese supply. FY24 saw weak R22 prices from Chinese exports into the Middle East.</div></div>
+    <div class="risk"><div class="t"><span class="sev m">MED</span>Regulatory phase-down</div><div class="d">The Kigali Amendment (global HFC phase-down) is a structural headwind for older refrigerants — though it also drives demand for R32/HFO replacements.</div></div>
+    <div class="risk"><div class="t"><span class="sev l">LOW</span>GST demand</div><div class="d">₹37.94 Cr demand plus interest and equal penalty (March 2024), being challenged.</div></div>
+    <div class="risk"><div class="t"><span class="sev l">LOW</span>Audit-trail exception</div><div class="d">Three years running, the auditor flagged that accounting software doesn't record changes by certain privileged users.</div></div>
+  </div>
+</section>
+
+<!-- MOMENTUM -->
+<section class="panel" id="momentum">
+  <h2>Momentum: Stage 2 confirmed</h2>
+  <p class="sub">Weinstein Stage Analysis · close ₹7,946.5</p>
+  <div class="callout green"><strong>5 of 5 checks pass.</strong> The stock is in Stage 2 (advancing), with a 10/30-week golden cross active for 94 weeks and +54 relative strength vs the Nifty 500 over 26 weeks.</div>
+  <div class="card">
+    <div class="check"><div><div class="c1">Close above 30-week average</div><div class="c2">₹7,946.5 vs ₹7,580.1</div></div><span class="pill">PASS</span></div>
+    <div class="check"><div><div class="c1">30W avg above 40W avg (rising long trend)</div><div class="c2">₹7,580.1 vs ₹7,242.5</div></div><span class="pill">PASS</span></div>
+    <div class="check"><div><div class="c1">Golden cross active (10W / 30W)</div><div class="c2">Active, 94 weeks</div></div><span class="pill">PASS</span></div>
+    <div class="check"><div><div class="c1">Relative strength vs Nifty 500 (26W)</div><div class="c2">+54</div></div><span class="pill">PASS</span></div>
+    <div class="check"><div><div class="c1">Price above 200-day average</div><div class="c2">₹7,946.5 vs ₹7,159.2</div></div><span class="pill">PASS</span></div>
+  </div>
+  <div class="card">
+    <h3>Price vs key levels (₹)</h3>
+    <div class="chart-box"><canvas id="cLvl"></canvas></div>
+  </div>
+  <div class="card">
+    <ul class="clean">
+      <li><strong>Short-term pullback:</strong> ~11.2% below the 52-week high (~₹8,950), below the 20-day (₹8,332) and 50-day (₹8,389) averages, momentum gauge RSI(14) at 36.9.</li>
+      <li><strong>Not a breakdown:</strong> this is consolidation within an established uptrend; the 200-day average at ₹7,159 sits well below price.</li>
+      <li><strong>Analyst technical note</strong> (Canara Bank Securities, Sep 2026): breakout from a downward channel, targets ₹9,085–9,372, stop-loss ₹7,769.</li>
+    </ul>
+  </div>
+  <div class="callout"><strong>Line in the sand:</strong> the 30-week average (~₹7,580). A weekly close below it would challenge the Stage 2 view.</div>
+</section>
+
+</main>
+<footer>Formatted from the Navin Fluorine deep-dive report. Educational content, not investment advice. Figures as stated in source report; no new data added.</footer>
+
+<script>
+var C = {accent:"#f0a500",green:"#37d39b",red:"#ff5964",blue:"#5aa9ff",purple:"#b48cff",muted:"#8a94a6",grid:"#17233b",text:"#e8edf6"};
+Chart.defaults.color = C.muted;
+Chart.defaults.font.family = "JetBrains Mono, monospace";
+Chart.defaults.font.size = 11;
+Chart.defaults.borderColor = C.grid;
+
+var drawn = {};
+var builders = {
+  theme: function(){
+    new Chart(document.getElementById("cMix"), {
+      type: "doughnut",
+      data: {labels:["HPP ₹1,615 Cr","Specialty ₹1,152 Cr","CDMO ~₹550 Cr"], datasets:[{data:[1615,1152,550], backgroundColor:[C.accent,C.blue,C.purple], borderColor:"#0a1220", borderWidth:3}]},
+      options: {responsive:true, maintainAspectRatio:false, cutout:"62%", plugins:{legend:{position:"bottom", labels:{boxWidth:10, padding:12}}}}
+    });
+  },
+  growth: function(){
+    new Chart(document.getElementById("cFin"), {
+      type: "bar",
+      data: {labels:["FY24","FY25","FY26","Q1 FY27"], datasets:[
+        {type:"bar", label:"Revenue", data:[2065,2349,3314,1045], backgroundColor:C.accent, borderRadius:4, yAxisID:"y", order:2},
+        {type:"bar", label:"PAT", data:[271,289,664,243], backgroundColor:C.green, borderRadius:4, yAxisID:"y", order:2},
+        {type:"line", label:"OPM %", data:[19.3,22.7,32.6,34.2], borderColor:C.blue, backgroundColor:C.blue, pointRadius:4, tension:.3, yAxisID:"y1", order:1}
+      ]},
+      options: {responsive:true, maintainAspectRatio:false, interaction:{mode:"index", intersect:false},
+        plugins:{legend:{position:"bottom", labels:{boxWidth:10}}},
+        scales:{y:{position:"left", grid:{color:C.grid}}, y1:{position:"right", min:0, max:40, grid:{display:false}, ticks:{callback:function(v){return v+"%";}}}, x:{grid:{display:false}}}}
+    });
+  },
+  valuation: function(){
+    new Chart(document.getElementById("cPE"), {
+      type: "bar",
+      data: {labels:["Current","3-Yr Median","5-Yr Median","Industry"], datasets:[{label:"P/E (x)", data:[51.5,62.6,66.4,52.0], backgroundColor:[C.accent,"#2a3a58","#2a3a58",C.blue], borderRadius:5}]},
+      options: {responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, grid:{color:C.grid}}, x:{grid:{display:false}}}}
+    });
+  },
+  owners: function(){
+    new Chart(document.getElementById("cOwn"), {
+      type: "doughnut",
+      data: {labels:["Promoters 27.08%","DIIs 28.70%","FIIs 23.38%","Public & others 20.84%"], datasets:[{data:[27.08,28.70,23.38,20.84], backgroundColor:[C.accent,C.blue,C.purple,"#2a3a58"], borderColor:"#0a1220", borderWidth:3}]},
+      options: {responsive:true, maintainAspectRatio:false, cutout:"62%", plugins:{legend:{position:"bottom", labels:{boxWidth:10, padding:10}}}}
+    });
+  },
+  momentum: function(){
+    new Chart(document.getElementById("cLvl"), {
+      type: "bar",
+      data: {labels:["52W High","50-DMA","20-DMA","Close","30W SMA","40W SMA","200-DMA"], datasets:[{label:"₹", data:[8950,8389,8332,7946.5,7580.1,7242.5,7159.2], backgroundColor:["#2a3a58","#2a3a58","#2a3a58",C.accent,C.green,C.green,C.green], borderRadius:4}]},
+      options: {indexAxis:"y", responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{min:6500, grid:{color:C.grid}}, y:{grid:{display:false}}}}
+    });
+  }
+};
+
+function show(id){
+  var tabs = document.querySelectorAll(".tab");
+  for (var i = 0; i < tabs.length; i++){ tabs[i].classList.toggle("active", tabs[i].getAttribute("data-p") === id); }
+  var panels = document.querySelectorAll(".panel");
+  for (var j = 0; j < panels.length; j++){ panels[j].classList.toggle("active", panels[j].id === id); }
+  var t = document.querySelector('.tab[data-p="' + id + '"]');
+  if (t) t.scrollIntoView({behavior:"smooth", inline:"center", block:"nearest"});
+  window.scrollTo({top:0, behavior:"smooth"});
+  if (builders[id] && !drawn[id] && typeof Chart !== "undefined"){ drawn[id] = true; requestAnimationFrame(builders[id]); }
+}
+document.getElementById("tabs").addEventListener("click", function(e){
+  var b = e.target.closest(".tab");
+  if (b) show(b.getAttribute("data-p"));
+});
+</script>
+</body>
+</html>
