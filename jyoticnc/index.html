@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- r2r-build:6623a37b1a114ed0 -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jyoti CNC Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#04080f;--panel:#0a1220;--border:#17233b;--accent:#f0a500;--text:#e8edf6;--muted:#8a94a6;--faint:#5a6577;--red:#ff5964;--green:#37d39b;--blue:#5aa9ff;--purple:#b48cff}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.55}
+nav{position:sticky;top:0;z-index:100;background:rgba(4,8,15,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none;padding:0 8px}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:0 0 auto;background:none;border:none;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;padding:15px 13px 12px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+nav button.active{color:var(--accent);border-bottom-color:var(--accent)}
+header{padding:22px 16px 8px;max-width:1080px;margin:0 auto}
+.ticker{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);letter-spacing:.08em}
+h1{font-family:'Syne',sans-serif;font-weight:800;font-size:27px;line-height:1.15;margin:6px 0 10px}
+.sub{color:var(--muted);font-size:14.5px}
+.badges{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+.badge{font-family:'JetBrains Mono',monospace;font-size:11px;padding:5px 9px;border-radius:5px;border:1px solid}
+.b-amber{color:var(--accent);border-color:rgba(240,165,0,.4);background:rgba(240,165,0,.08)}
+.b-red{color:var(--red);border-color:rgba(255,89,100,.4);background:rgba(255,89,100,.08)}
+.b-green{color:var(--green);border-color:rgba(55,211,155,.4);background:rgba(55,211,155,.08)}
+.b-blue{color:var(--blue);border-color:rgba(90,169,255,.4);background:rgba(90,169,255,.08)}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:14px 16px;max-width:1080px;margin:0 auto}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px}
+.kpi .l{font-size:11.5px;color:var(--muted)}
+.kpi .v{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;margin-top:3px}
+.kpi .n{font-size:11px;color:var(--faint);margin-top:2px}
+main{max-width:1080px;margin:0 auto;padding:6px 16px 60px}
+.panel{display:none}.panel.active{display:block}
+h2{font-family:'Syne',sans-serif;font-weight:700;font-size:21px;margin:12px 0 4px}
+.desc{color:var(--muted);font-size:14px;margin-bottom:14px}
+h3{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin-bottom:8px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
+.card p+p{margin-top:8px}
+.card ul{padding-left:18px}.card li{margin-bottom:7px}
+.callout{border-left:3px solid var(--accent);background:rgba(240,165,0,.06);padding:13px 14px;border-radius:0 10px 10px 0;margin-bottom:12px;font-size:14.5px}
+.callout.red{border-left-color:var(--red);background:rgba(255,89,100,.06)}
+.callout.green{border-left-color:var(--green);background:rgba(55,211,155,.06)}
+.callout b{color:var(--text)}
+.tw{overflow-x:auto;margin:4px 0}
+table{width:100%;border-collapse:collapse;min-width:480px;font-size:13.5px}
+th{text-align:left;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;color:var(--muted);font-weight:600;padding:8px;border-bottom:1px solid var(--border)}
+td{padding:9px 8px;border-bottom:1px solid var(--border)}
+td.num{font-family:'JetBrains Mono',monospace}
+.pos{color:var(--green)}.neg{color:var(--red)}.amb{color:var(--accent)}
+.chart{position:relative;height:250px;margin-top:6px}
+.src{font-size:11.5px;color:var(--faint);margin-top:8px;font-family:'JetBrains Mono',monospace}
+.quote{font-style:italic;color:var(--muted);border-left:2px solid var(--blue);padding-left:10px;margin:8px 0}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:2px 7px;border-radius:4px;margin-right:4px}
+.grid2{display:grid;grid-template-columns:1fr;gap:12px}
+.mono{font-family:'JetBrains Mono',monospace}
+@media(min-width:700px){.kpis{grid-template-columns:repeat(4,1fr)}.grid2{grid-template-columns:1fr 1fr}.grid2 .card{margin-bottom:0}}
+@media(min-width:900px){nav{justify-content:center;padding:0 24px}h1{font-size:34px}}
+</style>
+</head>
+<body>
+<nav id="tabs">
+  <button class="active" data-tab="overview">Overview</button>
+  <button data-tab="theme">Theme</button>
+  <button data-tab="growth">Growth</button>
+  <button data-tab="valuation">Valuation</button>
+  <button data-tab="promoter">Promoter</button>
+  <button data-tab="risks">Risks</button>
+  <button data-tab="momentum">Momentum</button>
+</nav>
+
+<header>
+  <div class="ticker">NSE: JYOTICNC · DEEP DIVE</div>
+  <h1>Jyoti CNC Automation Ltd</h1>
+  <p class="sub">Makes computer-controlled metal-cutting machines (CNC) for jet engines, missiles, phones and EV parts. Strong order book and capacity nearly tripling, but expensive, burning cash and carrying a French legal overhang.</p>
+  <div class="badges">
+    <span class="badge b-green">THEME: STRONG</span>
+    <span class="badge b-amber">GROWTH: DECELERATING</span>
+    <span class="badge b-red">VALUATION: EXPENSIVE</span>
+    <span class="badge b-red">RISK: HIGH</span>
+    <span class="badge b-blue">STAGE 2 · PULLBACK</span>
+  </div>
+</header>
+
+<section class="kpis">
+  <div class="kpi"><div class="l">Market cap</div><div class="v">₹20,197 Cr</div><div class="n">company value on market</div></div>
+  <div class="kpi"><div class="l">Price-to-earnings (P/E)</div><div class="v amb">62.8x</div><div class="n">industry 56.3x</div></div>
+  <div class="kpi"><div class="l">Order book (Mar-26)</div><div class="v">₹4,732 Cr</div><div class="n">18–20 months of work</div></div>
+  <div class="kpi"><div class="l">Free cash flow yield</div><div class="v neg">-1.3%</div><div class="n">cash burn, not cash return</div></div>
+</section>
+
+<main>
+<!-- OVERVIEW -->
+<section class="panel active" id="overview">
+  <h2>The Verdict</h2>
+  <p class="desc">The whole report in one screen: what the business is, what works, what could go wrong.</p>
+  <div class="callout"><b>The bet:</b> that the 16,000-machine Rajkot factory, ₹100 Cr of delayed Huron revenue and an in-house electronics (HUMA) margin boost turn a cash-burning expansion into the guided 25–30% growth. Until cash flow turns clearly positive and the French investigation is resolved, the high price leaves little room for another missed promise.</div>
+  <div class="card">
+    <h3>Scorecard</h3>
+    <div class="tw"><table>
+      <tr><th>Dimension</th><th>Read</th></tr>
+      <tr><td>Theme</td><td><span class="pos">Strong</span> — aerospace & defence + electronics manufacturing + import substitution; 10–12% domestic share</td></tr>
+      <tr><td>Growth</td><td><span class="amb">Good but slowing</span> — FY26 +15.2%, guidance cut to 25–30%; capacity tripling is the swing factor</td></tr>
+      <tr><td>Valuation</td><td><span class="neg">Expensive</span> vs industry (62.8x P/E, 40.2x EV/EBITDA), negative free cash flow yield</td></tr>
+      <tr><td>Promoter</td><td><span class="amb">Mixed</span> — founder clean; co-promoter Virani has pledged shares worth 13.07% of the company</td></tr>
+      <tr><td>Risk</td><td><span class="neg">High</span> — cash burn, rising debt, Huron investigation, falling price per machine</td></tr>
+      <tr><td>Momentum</td><td><span class="amb">Uptrend intact, in a pullback</span> — watch ₹832 (30-week average)</td></tr>
+    </table></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3 class="pos">What's working</h3><ul>
+      <li>₹4,732 Cr of orders in hand; ~40% are high-end machines above ₹2 Cr</li>
+      <li>Profit margin jumped from 8.3% (FY23) to 25%+</li>
+      <li>Rajkot capacity going from 6,000 to 16,000 machines a year, already funded</li>
+      <li>Founder holds 26.91% with zero pledged shares</li>
+    </ul></div>
+    <div class="card"><h3 class="neg">What worries</h3><ul>
+      <li>Negative free cash flow two years running (-₹415 Cr FY25, -₹269 Cr FY26)</li>
+      <li>Borrowings nearly tripled, ₹304 Cr → ₹853 Cr</li>
+      <li>French judicial investigation into the Huron subsidiary</li>
+      <li>Repeated missed guidance: debt-free target, electronics share, inventory, growth</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- THEME -->
+<section class="panel" id="theme">
+  <h2>Sectoral Theme</h2>
+  <p class="desc">The machine-tool maker behind India's factory build-out.</p>
+  <div class="card">
+    <h3>From gearboxes to jet-engine machines</h3>
+    <p>Promoters started in 1989 making gearboxes and began building CNC machines in 2002. The turning point: buying Huron Graffenstaden, a 150-year-old French pioneer of 5-axis machines (machines that cut from five directions at once, needed for complex aerospace parts), in 2007 — when Jyoti's revenue was only ₹50 Cr.</p>
+  </div>
+  <div class="card">
+    <h3>One engine, three price tiers</h3>
+    <p>About 93% of revenue is project-based machine sales, across 200+ models:</p>
+    <div class="tw"><table>
+      <tr><th>Tier</th><th>Price per machine</th></tr>
+      <tr><td>Entry-level</td><td class="num">up to ₹50 lakh</td></tr>
+      <tr><td>Mid-range</td><td class="num">₹50 lakh – ₹2 Cr</td></tr>
+      <tr><td>High-end multi-axis centres</td><td class="num">₹2 – 20 Cr</td></tr>
+    </table></div>
+  </div>
+  <div class="card">
+    <h3>Who buys (FY26 revenue mix)</h3>
+    <div class="chart"><canvas id="cMix"></canvas></div>
+    <p style="margin-top:10px">Customers include HAL, ISRO, Tata Boeing, Airbus, Safran, GE and Rolls Royce. "Other" is the remaining 12% not broken out in the report.</p>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Makes most parts itself</h3><p>In-house foundry, machine shop, spindles, tool changers and rotary tables (vertically integrated). Only ~10% of material spend — controllers and guideways — is imported.</p></div>
+    <div class="card"><h3>Huron = the technology gateway</h3><p>The Strasbourg plant sits within 200 km of every major global machine-tool builder, and its brand opens doors with global aerospace/defence firms. A new facility doubled its capacity in Nov 2025.</p></div>
+  </div>
+  <div class="callout green"><b>Tailwinds:</b> Make in India import substitution, defence indigenisation, electronics/semiconductor incentives and the EV shift. India's electronics manufacturing (EMS) sector alone is expected to need 1,00,000+ CNC machines in five years. Jyoti holds an estimated 10–12% domestic share in high-precision metal-cutting CNC.</div>
+</section>
+
+<!-- GROWTH -->
+<section class="panel" id="growth">
+  <h2>Growth</h2>
+  <p class="desc">Capacity tripling, order-book visibility and margin levers — and a slowdown.</p>
+  <div class="card">
+    <h3>Revenue and profit margin</h3>
+    <div class="chart"><canvas id="cRev"></canvas></div>
+    <div class="tw" style="margin-top:12px"><table>
+      <tr><th>Period</th><th>Revenue ₹Cr</th><th>Growth</th><th>Op. margin</th><th>Profit ₹Cr</th><th>ROCE</th></tr>
+      <tr><td>FY22</td><td class="num">746</td><td class="num">+40.3%</td><td class="num">9.7%</td><td class="num neg">-48</td><td class="num">4.8%</td></tr>
+      <tr><td>FY24</td><td class="num">1,338</td><td class="num">+44.0%</td><td class="num">22.5%</td><td class="num">151</td><td class="num">16.5%</td></tr>
+      <tr><td>FY25</td><td class="num">1,818</td><td class="num">+35.8%</td><td class="num">27.0%</td><td class="num">316</td><td class="num">21.1%</td></tr>
+      <tr><td>FY26</td><td class="num">2,093</td><td class="num amb">+15.2%</td><td class="num">25.2%</td><td class="num">336</td><td class="num">18.8%</td></tr>
+      <tr><td>TTM</td><td class="num">2,191</td><td class="num">+17.4%</td><td class="num">24.4%</td><td class="num">322</td><td class="num">NOT DISCLOSED</td></tr>
+    </table></div>
+    <p class="src">Op. margin = operating profit per ₹100 of sales (OPM). ROCE = return earned on all capital used. Source: reported financials.</p>
+  </div>
+  <div class="callout"><b>Margin story is real, growth is slowing.</b> Margin rose from 8.3% (FY23) to 25%+ thanks to more high-end machines and the Huron turnaround. But FY26 growth halved to 15.2%, and management cut its 30–35% growth guidance to 25–30%. Q1 FY27 revenue grew 24%, but margin dipped to 21.4% (23.4% adjusted) on Huron accounting changes and currency losses.</div>
+  <div class="card">
+    <h3>Order book (Mar 2026): ₹4,732 Cr</h3>
+    <div class="chart"><canvas id="cOB"></canvas></div>
+    <ul style="margin-top:10px">
+      <li>18–20 months of revenue visibility; ~40% are high-end machines (above ₹2 Cr) that carry better margins</li>
+      <li>FY27 new orders guided at ₹2,500–3,000 Cr; Q1 FY27 intake ~₹600 Cr is on track</li>
+      <li>Factories ran at ~88% use, hitting 100%+ in peak FY26 months; FY26 output 5,550 machines vs 6,000 capacity</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Capacity catalysts</h3>
+    <div class="chart" style="height:200px"><canvas id="cCap"></canvas></div>
+    <ul style="margin-top:10px">
+      <li><b>Rajkot mega-expansion:</b> 6,000 → 16,000 machines/year via ₹400–450 Cr; ~80% built, commissioning on track for end-Sep 2026; FY27 output guided at 8,000–9,000 machines. At full use and ~₹30 lakh average price, this nearly triples the revenue base.</li>
+      <li><b>Huron doubling:</b> ~240 machines/year since Nov 2025, enabling €70–75 Mn of revenue vs €30–32 Mn before; FY27 Huron revenue guided ₹300–325 Cr.</li>
+      <li><b>Deferred revenue:</b> ~₹100 Cr (₹67 Cr + ₹35 Cr) of billed Huron machines await export licences; the ~₹40 Cr margin hit reverses once booked.</li>
+      <li><b>Electronics (EMS) optionality:</b> a ₹700 Cr EMS order book has sat static for 1.5–2 years; target is 20–25% of business vs just 1% of FY26 revenue.</li>
+      <li><b>In-house controllers (HUMA):</b> prototype due in 12–18 months; replacing ~30% imported content guides a 4–5% gross margin gain. MeitY approved a ₹1,020.65 Cr Rajkot investment proposal on 17 Aug 2026 with up to 25% capex incentive.</li>
+      <li><b>New products & markets:</b> NX 6240 EY double-column machine (₹3–5 Cr each) for railways/heavy engineering; a ₹200 Cr MBDA order expected; US sales office expected within 2–3 months.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Guidance credibility check</h3>
+    <div class="tw"><table>
+      <tr><th>Delivered</th><th>Missed</th></tr>
+      <tr><td class="pos">EBITDA margin floor of 25%</td><td class="neg">Debt-free target</td></tr>
+      <tr><td class="pos">FY25 order inflow</td><td class="neg">EMS contribution</td></tr>
+      <tr><td class="pos">Huron turnaround</td><td class="neg">Inventory-day targets</td></tr>
+      <tr><td></td><td class="neg">₹55–60 Cr interest savings (finance cost rose ₹42.1 → ₹69.8 Cr)</td></tr>
+    </table></div>
+  </div>
+  <div class="callout red"><b>Treat guidance with a haircut.</b> Management's track record is mixed.</div>
+</section>
+
+<!-- VALUATION -->
+<section class="panel" id="valuation">
+  <h2>Valuation</h2>
+  <p class="desc">A premium price for a growth story that is currently burning cash.</p>
+  <div class="card">
+    <h3>Price multiples vs history and industry</h3>
+    <div class="chart"><canvas id="cVal"></canvas></div>
+    <div class="tw" style="margin-top:12px"><table>
+      <tr><th>Multiple</th><th>Current</th><th>3-yr median</th><th>Industry</th></tr>
+      <tr><td>P/E (price ÷ profit)</td><td class="num amb">62.8x</td><td class="num">79.8x</td><td class="num">56.3x</td></tr>
+      <tr><td>EV/EBITDA (whole-business value ÷ operating profit)</td><td class="num amb">40.2x</td><td class="num">37.2x</td><td class="num">28.1x</td></tr>
+      <tr><td>P/B (price ÷ book value)</td><td class="num">10.1x</td><td class="num">10.2x</td><td class="num">10.0x</td></tr>
+    </table></div>
+    <p class="src">PEG 1.16 · FCF yield -1.3% · Market cap ₹20,197 Cr</p>
+  </div>
+  <div class="card"><ul>
+    <li>Costlier than the industry on P/E and EV/EBITDA, but cheaper than its own 3-year median P/E of 79.8x — so some de-rating (multiple shrinking) has already happened.</li>
+    <li>PEG of 1.16 (P/E adjusted for growth) looks reasonable only if 25–30% growth holds; FY26's 15.2% shows that isn't guaranteed.</li>
+    <li>Free cash flow is negative because FY26 capex (₹323 Cr) plus working capital build (₹1,255 Cr) swamps the cash from operations.</li>
+  </ul></div>
+  <div class="callout"><b>This stock is priced on capacity and order book, not on cash returns.</b></div>
+</section>
+
+<!-- PROMOTER -->
+<section class="panel" id="promoter">
+  <h2>Promoter & Governance</h2>
+  <p class="desc">Clean founder — but watch the co-promoter's pledged shares.</p>
+  <div class="kpis" style="padding:0;margin-bottom:12px">
+    <div class="kpi"><div class="l">Promoter holding</div><div class="v">62.55%</div><div class="n">unchanged last quarter</div></div>
+    <div class="kpi"><div class="l">Jadeja direct stake</div><div class="v pos">26.91%</div><div class="n">0% pledged</div></div>
+    <div class="kpi"><div class="l">Jyoti Intl LLP</div><div class="v pos">16.16%</div><div class="n">unencumbered</div></div>
+    <div class="kpi"><div class="l">Virani pledged</div><div class="v neg">13.07%</div><div class="n">of total share capital</div></div>
+  </div>
+  <div class="card">
+    <h3 class="pos">Parakramsinh Jadeja — CMD</h3>
+    <p>Zero pledged shares in every filing from Sep 2024 to Jul 2026. 37+ years in machine tools, FY26 pay of ₹1 Cr, and no adverse SEBI or auditor findings in evidence.</p>
+  </div>
+  <div class="card">
+    <h3 class="neg">Anilkumar Virani — co-promoter (14.45% holder)</h3>
+    <p>Pledged shares (shares given as loan security) rose from 1.12% of the company (Sep 2024) to 13.07% by Jun 2026 — roughly 90% of his stake — with Aditya Birla Finance, HDFC Bank and Bajaj Finance, stated as security for loans for his business. No release event appears in the evidence.</p>
+    <div class="chart" style="height:200px"><canvas id="cPledge"></canvas></div>
+  </div>
+  <div class="card">
+    <h3>Management on debt</h3>
+    <p class="quote">Q1 FY27: no further debt increase from this year; debt to stay around 1:2 of EBITDA.</p>
+    <p class="quote">Q4 FY26: ~₹300 Cr of new debt went into capacity expansion; working capital added only ~₹45 Cr.</p>
+    <p class="src">Paraphrased from concall remarks quoted in the report.</p>
+  </div>
+  <div class="callout red"><b>The flag:</b> Virani's escalating pledges. If lenders ever sell pledged shares, that supply can pressure the stock.</div>
+</section>
+
+<!-- RISKS -->
+<section class="panel" id="risks">
+  <h2>Risks</h2>
+  <p class="desc">Cash burn, rising debt and a French investigation.</p>
+  <div class="card">
+    <h3>1. Negative free cash flow</h3>
+    <p>Free cash flow (cash left after running and expanding the business) was -₹415 Cr in FY25 and -₹269 Cr in FY26. Only 16.2% of FY26 profit turned into operating cash (OCF/PAT). Target for FY27: operating cash at ~50% of EBITDA vs ~10% in FY26 — a big jump.</p>
+  </div>
+  <div class="card">
+    <h3>2. Debt coming back</h3>
+    <div class="chart" style="height:200px"><canvas id="cDebt"></canvas></div>
+    <p style="margin-top:10px">Net debt ₹716 Cr; debt-to-equity 0.43 vs 0.22 in FY24. The FY24 promise of being debt-free in 2–3 years is dead.</p>
+  </div>
+  <div class="card">
+    <h3>3. Cash stuck in the business</h3>
+    <p>Inventory (stock held) ran 200–240 days by Q3 FY26 vs a 150–160 day target. Unbilled revenue (work done but not yet invoiced) grew to ~₹673 Cr in H1 FY26.</p>
+  </div>
+  <div class="callout red"><b>4. Huron judicial investigation (Apr 2026):</b> French authorities are investigating suspected export of dual-use machines (usable for civilian and military purposes) in breach of EU law. Huron's director general is temporarily restricted and ~€4.0 Mn of bank accounts are seized. The company says there is no adverse impact (standalone Jyoti is 85%+ of group revenue), will contest strongly, and expects no impairment by end-FY27 — but it is an unresolved overhang on export-licence-dependent Huron revenue.</div>
+  <div class="card">
+    <h3>5. Execution slippage</h3>
+    <p>The Rajkot deadline has slipped twice: Dec 2025 → Jun 2026 → Sep 2026. A minor fire occurred at the Rajkot facility in Sep 2026.</p>
+  </div>
+  <div class="card">
+    <h3>6. Falling price per machine</h3>
+    <div class="chart" style="height:200px"><canvas id="cReal"></canvas></div>
+    <p style="margin-top:10px">Average realization (price per machine) fell from a peak of ₹50.27 lakh (Q3 FY25) to ₹34.56 lakh in Q1 FY27 — below the ₹40 lakh floor management had committed to.</p>
+  </div>
+  <div class="card">
+    <h3>7. Guidance misses & cyclicality</h3>
+    <p>EMS contribution, inventory days, interest savings and the 30–35% growth target have all been missed. Heavy dependence on aerospace/defence and auto capital spending adds cyclicality.</p>
+  </div>
+</section>
+
+<!-- MOMENTUM -->
+<section class="panel" id="momentum">
+  <h2>Stock Momentum</h2>
+  <p class="desc">Long-term uptrend (Weinstein Stage 2) intact, but in a correction inside it.</p>
+  <div class="callout"><b>Verdict:</b> Yes, technically Stage 2 (a confirmed uptrend phase), but currently in a corrective phase within it. 1-year return: -3.2%.</div>
+  <div class="card">
+    <h3>Checklist</h3>
+    <div class="tw"><table>
+      <tr><th>Criterion</th><th>Reading</th><th>Status</th></tr>
+      <tr><td>Close above 30-week average</td><td class="num">₹888.1 vs ₹831.72</td><td class="pos mono">PASS</td></tr>
+      <tr><td>30W average above 40W average</td><td class="num">₹831.72 vs ₹821.65</td><td class="pos mono">PASS</td></tr>
+      <tr><td>Golden cross (10W over 30W)</td><td>Active, 10 weeks</td><td class="pos mono">PASS</td></tr>
+      <tr><td>Relative strength vs Nifty 500</td><td class="num">26W +11, 52W +10</td><td class="pos mono">PASS</td></tr>
+      <tr><td>Above 200-day average</td><td class="num">₹888.1 vs ₹832.39</td><td class="pos mono">PASS</td></tr>
+      <tr><td>RSI 14-day (momentum gauge)</td><td class="num">33.35</td><td class="amb mono">OVERSOLD</td></tr>
+      <tr><td>Distance from 52-week high</td><td class="num">-21.7% (high ₹1,134.7)</td><td class="amb mono">DEEP PULLBACK</td></tr>
+      <tr><td>vs 50-day EMA</td><td class="num">₹888.1 vs ₹970.75</td><td class="neg mono">BELOW</td></tr>
+    </table></div>
+    <p class="src">Source: latest market data.</p>
+  </div>
+  <div class="card">
+    <h3>Price vs key levels</h3>
+    <div class="chart" style="height:220px"><canvas id="cLvl"></canvas></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3 class="pos">Bullish signal</h3><p>A move back above the 50-day EMA (₹970.75) would confirm the uptrend is resuming.</p></div>
+    <div class="card"><h3 class="neg">Warning line</h3><p>A break below the 30-week average (~₹832) would put the Stage 2 classification under test.</p></div>
+  </div>
+</section>
+</main>
+
+<script>
+(function(){
+  var C = {accent:"#f0a500", text:"#e8edf6", muted:"#8a94a6", grid:"#17233b", red:"#ff5964", green:"#37d39b", blue:"#5aa9ff", purple:"#b48cff", faint:"#5a6577"};
+  var drawn = {};
+  var mono = {family:"'JetBrains Mono', monospace", size:11};
+
+  if (window.Chart) {
+    Chart.defaults.color = C.muted;
+    Chart.defaults.font.family = "'DM Sans', sans-serif";
+    Chart.defaults.borderColor = C.grid;
+    Chart.defaults.maintainAspectRatio = false;
+  }
+
+  function axes(extra) {
+    var o = {x:{grid:{display:false}, ticks:{font:mono}}, y:{grid:{color:C.grid}, ticks:{font:mono}}};
+    if (extra) { for (var k in extra) { o[k] = extra[k]; } }
+    return o;
+  }
+
+  var charts = {
+    theme: function(){
+      new Chart(document.getElementById("cMix"), {type:"doughnut",
+        data:{labels:["Aerospace & defence","Auto","General engineering","Other"],
+          datasets:[{data:[39,26,23,12], backgroundColor:[C.accent,C.blue,C.green,C.faint], borderColor:"#0a1220", borderWidth:2}]},
+        options:{cutout:"60%", plugins:{legend:{position:"bottom"}, tooltip:{callbacks:{label:function(c){return c.label+": "+c.raw+"%";}}}}}});
+    },
+    growth: function(){
+      new Chart(document.getElementById("cRev"), {type:"bar",
+        data:{labels:["FY22","FY24","FY25","FY26","TTM"],
+          datasets:[
+            {type:"bar", label:"Revenue ₹Cr", data:[746,1338,1818,2093,2191], backgroundColor:C.accent, borderRadius:4, yAxisID:"y"},
+            {type:"line", label:"Op. margin %", data:[9.7,22.5,27.0,25.2,24.4], borderColor:C.green, backgroundColor:C.green, tension:.3, yAxisID:"y1"}]},
+        options:{plugins:{legend:{position:"bottom"}},
+          scales:axes({y1:{position:"right", grid:{display:false}, ticks:{font:mono, callback:function(v){return v+"%";}}}})}});
+      new Chart(document.getElementById("cOB"), {type:"bar",
+        data:{labels:["A&D","Auto","Gen. eng.","EMS","Die & moulds"],
+          datasets:[{label:"% of order book", data:[38,20,19,9.5,9.5], backgroundColor:[C.accent,C.blue,C.green,C.purple,C.faint], borderRadius:4}]},
+        options:{indexAxis:"y", plugins:{legend:{display:false}}, scales:axes({x:{grid:{color:C.grid}, ticks:{font:mono, callback:function(v){return v+"%";}}}, y:{grid:{display:false}}})}});
+      new Chart(document.getElementById("cCap"), {type:"bar",
+        data:{labels:["FY26 output","Old capacity","FY27 output (guided, mid)","New capacity"],
+          datasets:[{label:"Machines / year", data:[5550,6000,8500,16000], backgroundColor:[C.faint,C.blue,C.purple,C.accent], borderRadius:4}]},
+        options:{plugins:{legend:{display:false}}, scales:axes()}});
+    },
+    valuation: function(){
+      new Chart(document.getElementById("cVal"), {type:"bar",
+        data:{labels:["P/E","EV/EBITDA","P/B"],
+          datasets:[
+            {label:"Current", data:[62.8,40.2,10.1], backgroundColor:C.accent, borderRadius:4},
+            {label:"3-yr median", data:[79.8,37.2,10.2], backgroundColor:C.blue, borderRadius:4},
+            {label:"Industry", data:[56.3,28.1,10.0], backgroundColor:C.faint, borderRadius:4}]},
+        options:{plugins:{legend:{position:"bottom"}}, scales:axes()}});
+    },
+    promoter: function(){
+      new Chart(document.getElementById("cPledge"), {type:"bar",
+        data:{labels:["Sep 2024","Jun 2026"],
+          datasets:[{label:"Virani pledged, % of total shares", data:[1.12,13.07], backgroundColor:[C.faint,C.red], borderRadius:4}]},
+        options:{plugins:{legend:{display:false}}, scales:axes({y:{grid:{color:C.grid}, max:14.45, ticks:{font:mono, callback:function(v){return v+"%";}}}})}});
+    },
+    risks: function(){
+      new Chart(document.getElementById("cDebt"), {type:"bar",
+        data:{labels:["FY24","FY26"],
+          datasets:[{label:"Borrowings ₹Cr", data:[304,853], backgroundColor:[C.faint,C.red], borderRadius:4}]},
+        options:{plugins:{legend:{display:false}}, scales:axes()}});
+      new Chart(document.getElementById("cReal"), {type:"bar",
+        data:{labels:["Q3 FY25 (peak)","Q1 FY27"],
+          datasets:[
+            {type:"bar", label:"Price per machine ₹ lakh", data:[50.27,34.56], backgroundColor:[C.blue,C.red], borderRadius:4},
+            {type:"line", label:"Committed floor ₹40 lakh", data:[40,40], borderColor:C.accent, borderDash:[5,4], pointRadius:0}]},
+        options:{plugins:{legend:{position:"bottom"}}, scales:axes({y:{grid:{color:C.grid}, beginAtZero:true, ticks:{font:mono}}})}});
+    },
+    momentum: function(){
+      new Chart(document.getElementById("cLvl"), {type:"bar",
+        data:{labels:["40W SMA","30W SMA","200D SMA","Price","50D EMA","52W high"],
+          datasets:[{label:"₹", data:[821.65,831.72,832.39,888.1,970.75,1134.7],
+            backgroundColor:[C.faint,C.red,C.faint,C.accent,C.green,C.blue], borderRadius:4}]},
+        options:{indexAxis:"y", plugins:{legend:{display:false}},
+          scales:axes({x:{grid:{color:C.grid}, min:700, ticks:{font:mono}}, y:{grid:{display:false}, ticks:{font:mono}}})}});
+    }
+  };
+
+  function drawFor(id) {
+    if (drawn[id] || !window.Chart || !charts[id]) { return; }
+    drawn[id] = true;
+    charts[id]();
+  }
+
+  var buttons = document.querySelectorAll("#tabs button");
+  for (var i = 0; i < buttons.length; i++) {
+    buttons[i].addEventListener("click", function(){
+      var id = this.getAttribute("data-tab");
+      for (var j = 0; j < buttons.length; j++) { buttons[j].classList.remove("active"); }
+      this.classList.add("active");
+      var panels = document.querySelectorAll(".panel");
+      for (var p = 0; p < panels.length; p++) { panels[p].classList.remove("active"); }
+      document.getElementById(id).classList.add("active");
+      this.scrollIntoView({behavior:"smooth", inline:"center", block:"nearest"});
+      window.scrollTo({top:0, behavior:"smooth"});
+      drawFor(id);
+    });
+  }
+  window.addEventListener("load", function(){ drawFor("overview"); });
+})();
+</script>
+</body>
+</html>
