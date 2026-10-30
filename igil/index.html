@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- r2r-build:1657235fddb641af -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IGIL — International Gemological Institute | Deep Dive Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#04080f;--panel:#0a1220;--border:#17233b;--accent:#f0a500;--text:#e8edf6;--muted:#8a94a6;--faint:#5a6577;--red:#ff5964;--green:#37d39b;--blue:#5aa9ff;--purple:#b48cff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+nav{position:sticky;top:0;z-index:100;background:rgba(4,8,15,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.tabs{display:flex;overflow-x:auto;scrollbar-width:none;padding:0 8px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;background:none;border:none;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;letter-spacing:.3px;padding:15px 14px 13px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+@media(min-width:900px){.tabs{justify-content:center;padding:0 24px}.tab{padding:16px 20px 14px}}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px}
+header{padding:24px 0 10px}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--accent);letter-spacing:1.2px;text-transform:uppercase}
+h1{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;line-height:1.15;margin:6px 0 10px}
+.summary{color:var(--muted);font-size:14.5px}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.badge{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:5px 10px;border-radius:20px;border:1px solid}
+.b-green{color:var(--green);border-color:rgba(55,211,155,.4);background:rgba(55,211,155,.08)}
+.b-amber{color:var(--accent);border-color:rgba(240,165,0,.4);background:rgba(240,165,0,.08)}
+.b-blue{color:var(--blue);border-color:rgba(90,169,255,.4);background:rgba(90,169,255,.08)}
+.b-red{color:var(--red);border-color:rgba(255,89,100,.4);background:rgba(255,89,100,.08)}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:18px 0 6px}
+@media(min-width:700px){.kpis{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.kpi .l{font-size:11.5px;color:var(--muted)}
+.kpi .v{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;margin-top:2px}
+.kpi .s{font-size:11px;color:var(--faint);font-family:'JetBrains Mono',monospace}
+main{padding:14px 0 60px}
+.panel{display:none}.panel.active{display:block}
+h2{font-family:'Syne',sans-serif;font-weight:700;font-size:22px;margin:10px 0 4px}
+.desc{color:var(--muted);font-size:13.5px;margin-bottom:16px}
+h3{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin-bottom:8px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px}
+.card p+p{margin-top:8px}
+.card ul{padding-left:18px}.card li{margin-bottom:7px}
+.card li b{color:var(--text)}
+.callout{border-left:3px solid var(--accent);background:rgba(240,165,0,.06);padding:12px 14px;border-radius:0 10px 10px 0;margin-bottom:14px;font-size:14.5px}
+.callout.red{border-color:var(--red);background:rgba(255,89,100,.06)}
+.callout.green{border-color:var(--green);background:rgba(55,211,155,.06)}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:4px -4px 0;padding:0 4px}
+table{width:100%;min-width:460px;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:12.5px}
+th{text-align:left;color:var(--muted);font-weight:600;padding:8px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:9px 8px;border-bottom:1px solid rgba(23,35,59,.6)}
+tr:last-child td{border-bottom:none}
+.pos{color:var(--green)}.neg{color:var(--red)}.amb{color:var(--accent)}
+.src{font-size:11.5px;color:var(--faint);margin-top:8px;font-family:'JetBrains Mono',monospace}
+.chart{position:relative;height:260px;margin-top:6px}
+.grid2{display:grid;gap:14px}
+@media(min-width:800px){.grid2{grid-template-columns:1fr 1fr}}
+.quote{font-style:italic;color:var(--text);border-left:2px solid var(--purple);padding:4px 0 4px 12px;margin-top:10px;font-size:14px}
+.tag{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:2px 7px;border-radius:5px;margin-right:6px;vertical-align:1px}
+.t-red{background:rgba(255,89,100,.12);color:var(--red)}
+.t-green{background:rgba(55,211,155,.12);color:var(--green)}
+.t-blue{background:rgba(90,169,255,.12);color:var(--blue)}
+.muted{color:var(--muted)}
+.check{color:var(--green);font-weight:700}
+footer{color:var(--faint);font-size:11.5px;text-align:center;padding:20px 0 40px;border-top:1px solid var(--border)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-t="overview">Overview</button>
+    <button class="tab" data-t="theme">Business</button>
+    <button class="tab" data-t="growth">Growth</button>
+    <button class="tab" data-t="valuation">Valuation</button>
+    <button class="tab" data-t="promoter">Promoter</button>
+    <button class="tab" data-t="risks">Risks &amp; Catalysts</button>
+    <button class="tab" data-t="momentum">Momentum</button>
+  </div>
+</nav>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">NSE: IGIL · Deep Dive · Q2 FY27</div>
+  <h1>International Gemological Institute</h1>
+  <p class="summary">The "trust stamp" of the diamond trade. IGI charges a fee for every diamond grading certificate it issues, and lab-grown diamond volumes are exploding. Low capital needs, very high profit margins, no debt.</p>
+  <div class="badges">
+    <span class="badge b-green">BEST QUARTER EVER</span>
+    <span class="badge b-green">GUIDANCE RAISED</span>
+    <span class="badge b-blue">WEINSTEIN STAGE 2</span>
+    <span class="badge b-amber">ZERO DEBT</span>
+    <span class="badge b-red">WATCH: CASH CONVERSION</span>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><div class="l">Share price</div><div class="v">₹397.75</div><div class="s">5.4% below 52W high</div></div>
+    <div class="kpi"><div class="l">Market cap</div><div class="v">₹17,189 Cr</div><div class="s">Blackstone owns 76.55%</div></div>
+    <div class="kpi"><div class="l">Price / Earnings</div><div class="v">25.8x</div><div class="s">3-yr median 28.8x</div></div>
+    <div class="kpi"><div class="l">Q2 FY27 profit (PAT)</div><div class="v pos">+43%</div><div class="s">₹185.8 Cr</div></div>
+  </div>
+</header>
+
+<main>
+
+<!-- OVERVIEW -->
+<section class="panel active" id="overview">
+  <h2>Verdict at a glance</h2>
+  <p class="desc">The one-screen summary of the full report.</p>
+  <div class="callout green">A Blackstone-backed, zero-debt business keeping 60%+ of every rupee of sales as operating profit (EBITDA margin), a "tollbooth" on diamond certification growing at 24%+ a year, with guidance raised and a fresh uptrend on the charts.</div>
+  <div class="card">
+    <h3>Why it looks good</h3>
+    <ul>
+      <li><b>Record quarter:</b> Q2 FY27 sales up 31%, profit up 43%, the best quarter in the company's history.</li>
+      <li><b>Guidance raised:</b> management started the year expecting 15% sales growth; now expects full-year growth similar to H1 (~27%), "if not better".</li>
+      <li><b>Not expensive vs its own past:</b> 25.8x earnings is below its 3-year median of 28.8x, even though growth is speeding up.</li>
+      <li><b>Strong chart:</b> price above rising 30- and 40-week averages, with a fresh "golden crossover" (faster average crossing above the slower one).</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>What to watch</h3>
+    <ul>
+      <li><span class="tag t-red">RISK</span><b>Lab-grown diamond prices:</b> if prices fall again, it can flow into IGI's fee per report.</li>
+      <li><span class="tag t-red">RISK</span><b>Few big customers:</b> 8–10 dealers may bring in 40–50% of revenue.</li>
+      <li><span class="tag t-red">RISK</span><b>Cash lags profit:</b> over six years, actual cash from operations covered only 64% of operating profit.</li>
+    </ul>
+  </div>
+  <div class="callout">Bottom line from the report: valuation is not demanding against history. Size the position around the real risks: LGD price pass-through, a concentrated dealer base, and cash conversion that lags reported profit.</div>
+</section>
+
+<!-- BUSINESS -->
+<section class="panel" id="theme">
+  <h2>The trust layer of the diamond trade</h2>
+  <p class="desc">What IGI does, how it earns, and why it's hard to displace.</p>
+  <div class="card">
+    <p>IGI is the <b>world's largest certifier of lab-grown diamonds (LGD)</b> and the <b>second-largest independent diamond certifier overall</b>. It earns a fee on every grading report. Its labs sit <i>inside</i> the factories of the biggest lab-grown growers, so more production flows straight into more certificates.</p>
+    <div class="quote">"It is the IGI certificate that makes the lab-grown diamond a diamond, and it is the same certificate that also protects the value of a natural diamond." — Management</div>
+  </div>
+  <div class="card">
+    <h3>Business model &amp; moat</h3>
+    <ul>
+      <li><b>Paid per report:</b> revenue rises with the number of reports; the average fee per report (ARP) rises as the mix shifts to larger loose stones. India alone certified 1.46 crore stones in the 15 months to March 2026.</li>
+      <li><b>Lab-grown duopoly:</b> IGI holds ~65% of global lab-grown certifications in a two-player market. The top 5–6 growers control 65–70% of production, which limits price wars among IGI's own customers.</li>
+      <li><b>Natural diamonds:</b> ~50–55% share in India, 15–25% globally; GIA is the main rival. A dedicated team is pushing for share gains.</li>
+      <li><b>Network:</b> 36 labs and 18 Schools of Gemology across 10 countries; 12 labs inside major growers' plants.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Segment growth — Q2 FY27 (year-on-year)</h3>
+    <div class="chart"><canvas id="segChart"></canvas></div>
+    <div class="tw"><table>
+      <tr><th>Segment</th><th>YoY growth</th><th>What it means</th></tr>
+      <tr><td>LGD loose stones</td><td class="pos">+37%</td><td>Core volume engine</td></tr>
+      <tr><td>LGD jewellery</td><td class="pos">+47%</td><td>Fastest-growing; retail adoption</td></tr>
+      <tr><td>Natural loose stones</td><td class="pos">+8%</td><td>Share gains in a flat market</td></tr>
+      <tr><td>Natural jewellery</td><td class="amb">+3%</td><td>Dragged by gold price volatility</td></tr>
+      <tr><td>Gemstones (incl. AGL)</td><td class="pos">+331% (7x)</td><td>New vertical from Jan 2026 acquisition</td></tr>
+    </table></div>
+    <div class="src">Gemstones (+331%) shown off-scale on chart. Source: Q2 FY27 results reporting.</div>
+  </div>
+  <div class="card">
+    <h3>The long runway</h3>
+    <ul>
+      <li>Global gems &amp; jewellery certification market: <b>USD 550–650M (2023) → USD 900–1,100M by 2028</b>, ~22% a year, led by lab-grown. Natural diamond and studded jewellery segments grow ~8% each.</li>
+      <li>Diamond jewellery penetration: <b>India ~8% vs US ~70%</b>.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- GROWTH -->
+<section class="panel" id="growth">
+  <h2>Guidance raised after a blowout quarter</h2>
+  <p class="desc">Latest results, multi-year trend, and what's driving growth.</p>
+  <div class="callout green">Q2 FY27 was the best quarter in the company's history, and management now expects H2 to match H1's pace.</div>
+  <div class="card">
+    <h3>Q2 FY27 scorecard</h3>
+    <div class="tw"><table>
+      <tr><th>Metric</th><th>Q2 FY27</th><th>YoY</th></tr>
+      <tr><td>Revenue</td><td>₹398 Cr</td><td class="pos">+31%</td></tr>
+      <tr><td>Operating profit (EBITDA)</td><td>₹244.5 Cr</td><td class="pos">+39%</td></tr>
+      <tr><td>EBITDA margin</td><td>61.4%</td><td class="pos">+340 bps</td></tr>
+      <tr><td>Net profit (PAT)</td><td>₹185.8 Cr</td><td class="pos">+43%</td></tr>
+      <tr><td>Reports issued</td><td>43.5 lakh</td><td class="pos">+26%</td></tr>
+      <tr><td>Avg fee per report (ARP)</td><td>₹891</td><td class="pos">+4%</td></tr>
+    </table></div>
+    <p class="src">H1 FY27: revenue ₹768.8 Cr (+27%), EBITDA ₹468.3 Cr (+34%), PAT ₹351.6 Cr (+37%), volumes 79.1 lakh (+22%).</p>
+  </div>
+  <div class="card">
+    <h3>Multi-year trajectory</h3>
+    <div class="chart"><canvas id="trendChart"></canvas></div>
+    <div class="tw"><table>
+      <tr><th>Period</th><th>Revenue (₹ Cr)</th><th>Growth</th><th>Op. margin</th><th>PAT (₹ Cr)</th></tr>
+      <tr><td>FY23</td><td>491</td><td>—</td><td>68.3%</td><td>242</td></tr>
+      <tr><td>FY24</td><td>898</td><td class="pos">+82.9%</td><td>55.2%</td><td>331</td></tr>
+      <tr><td>FY25</td><td>1,053</td><td class="pos">+17.3%</td><td>56.9%</td><td>427</td></tr>
+      <tr><td>FY26 (15M)</td><td>1,598</td><td>—</td><td>60.9%</td><td>711</td></tr>
+      <tr><td>TTM</td><td>1,457</td><td class="pos">+24.1%</td><td>61.5%</td><td>666</td></tr>
+    </table></div>
+    <p class="src">FY26 covers 15 months, so it isn't directly comparable. CY2022–25 compound growth: revenue 36%, EBITDA 29%, PAT 30%.</p>
+  </div>
+  <div class="card">
+    <h3>Growth drivers</h3>
+    <ul>
+      <li><b>Guidance upgraded:</b> from 15% revenue / 20% EBITDA growth to "similar to H1", i.e. mid-20s revenue growth or higher.</li>
+      <li><b>Lab-grown supply ramp:</b> Indian growers doubling capacity over three years; CVD reactor count up from ~8.2k to ~10k; polished LGD exports more than doubled in one fiscal year (report: 7.8 to 1.53 crore carats).</li>
+      <li><b>Retail adoption:</b> 1,000+ LGD showrooms in India; over 50% of US bridal diamonds now lab-grown; Europe, Latin America and Australia opening up.</li>
+      <li><b>AGL gemstones:</b> USD 13.2M acquisition (Feb 2026) added a fifth segment; now 6.3% of mix; expanding to Jaipur, Thailand, Hong Kong.</li>
+      <li><b>Geographic build-out:</b> Italy launched, Saudi subsidiary approved, Botswana set up (Sep 2026), Dubai Deira Gold Souk lab opened; overseas certification revenue +31% ex-AGL.</li>
+      <li><b>Operating leverage:</b> profit expected to grow faster than sales; group margin up at least 100 bps by FY27-end.</li>
+    </ul>
+  </div>
+  <div class="callout">Watch: India standalone margin dipped 340 bps to 69.5% on deliberate spending (leadership, IPL marketing, commissions). Management expects it to settle around 70%.</div>
+</section>
+
+<!-- VALUATION -->
+<section class="panel" id="valuation">
+  <h2>Reasonable vs history, premium vs industry</h2>
+  <p class="desc">How much you pay for the business, and what you get.</p>
+  <div class="card">
+    <h3>Multiples: now vs 3-year median vs industry</h3>
+    <div class="chart"><canvas id="valChart"></canvas></div>
+    <div class="tw"><table>
+      <tr><th>Multiple</th><th>Current</th><th>3-Yr Median</th><th>Industry</th></tr>
+      <tr><td>Price / Earnings (P/E)</td><td>25.8x</td><td>28.8x</td><td>21.5x</td></tr>
+      <tr><td>EV / EBITDA</td><td>18.8x</td><td>17.6x</td><td>18.2x</td></tr>
+      <tr><td>Price / Book (P/B)</td><td>9.8x</td><td>10.2x</td><td>3.9x</td></tr>
+    </table></div>
+    <p class="src">PEG 1.15 (P/E divided by growth rate). Market cap ₹17,189 Cr.</p>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>Balance sheet</h3>
+      <ul>
+        <li><b>Zero borrowings.</b></li>
+        <li>Net cash ₹560 Cr (TTM).</li>
+        <li>Cash &amp; bank ₹1,074.9 Cr at Q2 FY27 close.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Cash &amp; returns</h3>
+      <ul>
+        <li>Cash from operations was 91–94% of profit over FY24–FY26 (OCF/PAT).</li>
+        <li>H1 FY27 operating cash ₹415.7 Cr = 118% of profit.</li>
+        <li>Return on capital (ROCE) ~52%, return on equity (ROE) ~38%.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout">At 25.8x earnings with 24% growth and a PEG of 1.15, the stock trades slightly below its own 3-year median despite accelerating growth. The premium to industry on P/B reflects the capital-light, very high-margin model.</div>
+</section>
+
+<!-- PROMOTER -->
+<section class="panel" id="promoter">
+  <h2>Blackstone-controlled — clean, with caveats</h2>
+  <p class="desc">Who owns the company and how they've behaved.</p>
+  <div class="card">
+    <h3>Shareholding</h3>
+    <div class="chart" style="height:220px"><canvas id="ownChart"></canvas></div>
+    <p class="src">Blackstone 76.55% (via BCP Asia II TopCo) · FII 8.8% · DII 5.5% · rest NOT DISCLOSED in report (shown as "Others/Public"). Pledge on promoter's own shares: 0%.</p>
+  </div>
+  <div class="card">
+    <h3>IPO structure</h3>
+    <p>₹1,300 Cr of IPO proceeds bought the global Belgium/Netherlands network from the promoter, bringing the worldwide group under the listed company (completed Dec 2024).</p>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3 class="pos">Clean record</h3>
+      <ul>
+        <li>Unqualified (clean) audit opinions.</li>
+        <li>No fraud findings.</li>
+        <li>New York diamond over-grading lawsuit dismissed (Dec 2025).</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 class="neg">Caveats</h3>
+      <ul>
+        <li>Promoter's holding is <b>indirectly pledged</b>: its parent pledged 100% of its shareholding for an offshore loan.</li>
+        <li>61.47% of public institutional votes went <b>against</b> the employee stock option (ESOP) ratification at the 2025 AGM.</li>
+        <li>A Ministry of Corporate Affairs (MCA) compounding matter is still pending.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- RISKS & CATALYSTS -->
+<section class="panel" id="risks">
+  <h2>Risks and catalysts</h2>
+  <p class="desc">What could go wrong, and what could push the stock higher.</p>
+  <div class="callout red">Biggest swing factor: lab-grown diamond pricing. Wholesale prices sit at $80–120/carat; any renewed fall flows into fees per report. Management says pricing is stable.</div>
+  <div class="card">
+    <h3>Risks</h3>
+    <ul>
+      <li><span class="tag t-red">PRICING</span><b>LGD price erosion</b> passes through to average fee per report.</li>
+      <li><span class="tag t-red">CONCENTRATION</span><b>Dealers:</b> "8-10 guys probably will contribute close to 40%, 50% of our revenues". Dealer sales were 98.79% of FY26 sales; names and terms undisclosed.</li>
+      <li><span class="tag t-red">CASH</span><b>Cash conversion gap:</b> cumulative operating cash covered only 64% of cumulative EBITDA over six years to FY26. Yellow flag on receivables (60-day credit to large growers).</li>
+      <li><span class="tag t-red">DEMAND</span><b>Natural diamond jewellery softness:</b> fell 19% in Q4 FY26, grew just 3% in Q2 FY27 on volatile gold and silver prices.</li>
+      <li><span class="tag t-red">GEOGRAPHY</span><b>India/Surat dependence:</b> 95% of the world's diamonds are cut and polished in India; ~three-quarters of group revenue is India-linked.</li>
+      <li><span class="tag t-red">REPORTING</span><b>15-month FY26:</b> year extended (Jan 2025–Mar 2026) without quantifying the effect on comparisons.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Catalysts</h3>
+    <ul>
+      <li><span class="tag t-green">GUIDANCE</span><b>H2 to match H1:</b> 27% revenue / 34% EBITDA growth; India festive season and US holiday ordering gathering pace.</li>
+      <li><span class="tag t-green">VOLUME</span><b>LGD jewellery boom:</b> 1,000+ Indian showrooms, &gt;50% US bridal share, retailer margins on LGD 30–40% higher than natural.</li>
+      <li><span class="tag t-green">SHARE</span><b>Natural diamond share gains:</b> +8% in H1 in a flat market; target double-digit growth by year-end.</li>
+      <li><span class="tag t-green">NEW</span><b>AGL globalisation:</b> coloured-stone certification moving from New York to Jaipur, Thailand, Hong Kong on a tiny base.</li>
+      <li><span class="tag t-green">EXPANSION</span><b>New labs:</b> Italy, Saudi, Botswana, Deira Gold Souk, plus Tier 2/3 India (Lucknow, Raipur).</li>
+      <li><span class="tag t-green">MARGIN</span><b>Margin expansion:</b> group EBITDA margin above 61% and rising; AI-based grading allocation improving throughput.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- MOMENTUM -->
+<section class="panel" id="momentum">
+  <h2>Firmly in Weinstein Stage 2</h2>
+  <p class="desc">Stage 2 = the "advancing" phase: price above a rising long-term average with market-beating strength.</p>
+  <div class="card">
+    <h3>Price vs long-term averages</h3>
+    <div class="chart" style="height:220px"><canvas id="maChart"></canvas></div>
+  </div>
+  <div class="card">
+    <h3>Stage 2 checklist</h3>
+    <div class="tw"><table>
+      <tr><th>Parameter</th><th>Value</th><th>Check</th></tr>
+      <tr><td>Close</td><td>₹397.75</td><td>Above all moving averages</td></tr>
+      <tr><td>SMA 30W</td><td>₹347.81</td><td class="check">Price above ✓</td></tr>
+      <tr><td>SMA 40W</td><td>₹341.80</td><td class="check">Price above ✓</td></tr>
+      <tr><td>30W vs 40W SMA</td><td>Rising, golden crossover (1 wk old)</td><td class="check">✓</td></tr>
+      <tr><td>Relative strength vs Nifty 500 (26W)</td><td>+2, outperforming</td><td class="check">✓</td></tr>
+      <tr><td>vs 52W high / low</td><td>5.4% below high; 38.6% above low</td><td class="check">✓</td></tr>
+      <tr><td>RSI (14D)</td><td>74.5</td><td class="amb">Strong, near overbought</td></tr>
+      <tr><td>1Y return</td><td>+17.1% (Nifty 500: +25.2%)</td><td>Positive</td></tr>
+    </table></div>
+  </div>
+  <div class="card">
+    <h3>Key levels</h3>
+    <ul>
+      <li><b>Results reaction:</b> upper circuit at ₹352.50 on 22 Oct after Q2, then a run to within 5.4% of the 52-week high — renewed institutional buying.</li>
+      <li><b>Support:</b> ₹345.</li>
+      <li><b>Analyst targets:</b> ₹369 and ₹385–393.</li>
+      <li><b>Setup fails:</b> a close below ₹325.</li>
+    </ul>
+  </div>
+  <div class="callout">Caution: RSI at 74.5 means the stock is stretched in the short term. Buying on dips is the more favourable approach.</div>
+</section>
+
+</main>
+<footer>Dashboard view of the IGIL deep-dive report. No figures added beyond the source. Not investment advice.</footer>
+</div>
+
+<script>
+var drawn = {};
+var C = {text:"#e8edf6", muted:"#8a94a6", grid:"#17233b", accent:"#f0a500", green:"#37d39b", red:"#ff5964", blue:"#5aa9ff", purple:"#b48cff", faint:"#5a6577"};
+
+function baseOpts(extra) {
+  var o = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: C.muted, font: { family: "JetBrains Mono", size: 11 } } } },
+    scales: {
+      x: { ticks: { color: C.muted, font: { family: "JetBrains Mono", size: 10.5 } }, grid: { color: C.grid } },
+      y: { ticks: { color: C.muted, font: { family: "JetBrains Mono", size: 10.5 } }, grid: { color: C.grid } }
+    }
+  };
+  if (extra) { for (var k in extra) o[k] = extra[k]; }
+  return o;
+}
+
+var chartDefs = {
+  theme: function () {
+    new Chart(document.getElementById("segChart"), {
+      type: "bar",
+      data: {
+        labels: ["LGD loose", "LGD jewellery", "Natural loose", "Natural jewellery", "Gemstones*"],
+        datasets: [{ label: "YoY growth %", data: [37, 47, 8, 3, 60],
+          backgroundColor: [C.accent, C.accent, C.blue, C.blue, C.purple], borderRadius: 6 }]
+      },
+      options: (function () {
+        var o = baseOpts();
+        o.plugins.legend.display = false;
+        o.plugins.tooltip = { callbacks: { label: function (c) { return c.dataIndex === 4 ? "+331% (off-scale)" : "+" + c.raw + "%"; } } };
+        o.scales.y.max = 60;
+        o.scales.y.ticks.callback = function (v) { return v + "%"; };
+        return o;
+      })()
+    });
+  },
+  growth: function () {
+    new Chart(document.getElementById("trendChart"), {
+      type: "bar",
+      data: {
+        labels: ["FY23", "FY24", "FY25", "FY26 (15M)", "TTM"],
+        datasets: [
+          { type: "bar", label: "Revenue (₹ Cr)", data: [491, 898, 1053, 1598, 1457], backgroundColor: C.accent, borderRadius: 6, yAxisID: "y" },
+          { type: "bar", label: "PAT (₹ Cr)", data: [242, 331, 427, 711, 666], backgroundColor: C.green, borderRadius: 6, yAxisID: "y" },
+          { type: "line", label: "Op. margin %", data: [68.3, 55.2, 56.9, 60.9, 61.5], borderColor: C.blue, backgroundColor: C.blue, tension: 0.3, yAxisID: "y1" }
+        ]
+      },
+      options: (function () {
+        var o = baseOpts();
+        o.scales.y1 = { position: "right", min: 40, max: 80, ticks: { color: C.blue, font: { family: "JetBrains Mono", size: 10.5 }, callback: function (v) { return v + "%"; } }, grid: { display: false } };
+        return o;
+      })()
+    });
+  },
+  valuation: function () {
+    new Chart(document.getElementById("valChart"), {
+      type: "bar",
+      data: {
+        labels: ["P/E", "EV/EBITDA", "P/B"],
+        datasets: [
+          { label: "Current", data: [25.8, 18.8, 9.8], backgroundColor: C.accent, borderRadius: 6 },
+          { label: "3-Yr median", data: [28.8, 17.6, 10.2], backgroundColor: C.blue, borderRadius: 6 },
+          { label: "Industry", data: [21.5, 18.2, 3.9], backgroundColor: C.faint, borderRadius: 6 }
+        ]
+      },
+      options: (function () { var o = baseOpts(); o.scales.y.ticks.callback = function (v) { return v + "x"; }; return o; })()
+    });
+  },
+  promoter: function () {
+    new Chart(document.getElementById("ownChart"), {
+      type: "doughnut",
+      data: {
+        labels: ["Blackstone 76.55%", "FII 8.8%", "DII 5.5%", "Others/Public 9.15%"],
+        datasets: [{ data: [76.55, 8.8, 5.5, 9.15], backgroundColor: [C.accent, C.blue, C.purple, C.faint], borderColor: "#0a1220", borderWidth: 2 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, cutout: "62%",
+        plugins: { legend: { position: "right", labels: { color: C.muted, font: { family: "JetBrains Mono", size: 11 } } } } }
+    });
+  },
+  momentum: function () {
+    new Chart(document.getElementById("maChart"), {
+      type: "bar",
+      data: {
+        labels: ["SMA 40W", "SMA 30W", "Support", "Close", "Target (upper)"],
+        datasets: [{ label: "₹", data: [341.80, 347.81, 345, 397.75, 393],
+          backgroundColor: [C.faint, C.blue, C.green, C.accent, C.purple], borderRadius: 6 }]
+      },
+      options: (function () {
+        var o = baseOpts({ indexAxis: "y" });
+        o.plugins.legend.display = false;
+        o.scales.x.min = 300;
+        o.scales.x.ticks.callback = function (v) { return "₹" + v; };
+        return o;
+      })()
+    });
+  }
+};
+
+function show(id) {
+  var tabs = document.querySelectorAll(".tab");
+  for (var i = 0; i < tabs.length; i++) {
+    var on = tabs[i].getAttribute("data-t") === id;
+    tabs[i].classList.toggle("active", on);
+    if (on) tabs[i].scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+  }
+  var panels = document.querySelectorAll(".panel");
+  for (var j = 0; j < panels.length; j++) panels[j].classList.toggle("active", panels[j].id === id);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  if (!drawn[id] && chartDefs[id] && window.Chart) {
+    drawn[id] = true;
+    requestAnimationFrame(chartDefs[id]);
+  }
+}
+
+document.getElementById("tabs").addEventListener("click", function (e) {
+  var b = e.target.closest(".tab");
+  if (b) show(b.getAttribute("data-t"));
+});
+</script>
+</body>
+</html>
