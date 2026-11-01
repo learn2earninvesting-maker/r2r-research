@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- r2r-build:da308ae9afb342be -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Indegene Ltd (INDGN) — Deep Dive Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#04080f;--panel:#0a1220;--border:#17233b;--accent:#f0a500;--text:#e8edf6;--muted:#8a94a6;--faint:#5a6577;--red:#ff5964;--green:#37d39b;--blue:#5aa9ff;--purple:#b48cff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+nav{position:sticky;top:0;z-index:100;background:rgba(4,8,15,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none;padding:0 8px}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:0 0 auto;background:none;border:none;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.04em;text-transform:uppercase;padding:15px 13px 13px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+nav button.active{color:var(--accent);border-bottom-color:var(--accent)}
+@media(min-width:900px){nav{justify-content:center;padding:0 24px}nav button{padding:16px 18px 14px}}
+header{padding:24px 18px 8px;max-width:1000px;margin:0 auto}
+.ticker{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);letter-spacing:.08em}
+h1{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;line-height:1.15;margin:6px 0 10px}
+.summary{color:var(--muted);font-size:14.5px}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.badge{font-family:'JetBrains Mono',monospace;font-size:11px;padding:5px 10px;border-radius:20px;border:1px solid}
+.b-green{color:var(--green);border-color:rgba(55,211,155,.4);background:rgba(55,211,155,.08)}
+.b-amber{color:var(--accent);border-color:rgba(240,165,0,.4);background:rgba(240,165,0,.08)}
+.b-blue{color:var(--blue);border-color:rgba(90,169,255,.4);background:rgba(90,169,255,.08)}
+.b-red{color:var(--red);border-color:rgba(255,89,100,.4);background:rgba(255,89,100,.08)}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:16px 18px;max-width:1000px;margin:0 auto}
+@media(min-width:700px){.kpis{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.kpi .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.kpi .v{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;margin-top:4px}
+.kpi .s{font-size:11.5px;color:var(--faint);margin-top:2px}
+main{max-width:1000px;margin:0 auto;padding:4px 18px 60px}
+.panel{display:none}.panel.active{display:block}
+h2{font-family:'Syne',sans-serif;font-weight:700;font-size:22px;margin:14px 0 4px}
+.desc{color:var(--muted);font-size:14px;margin-bottom:14px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px}
+.card h3{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin-bottom:8px}
+.card p+p{margin-top:8px}
+.card ul{padding-left:18px}.card li{margin:6px 0}
+.callout{border-left:3px solid var(--accent);background:rgba(240,165,0,.06);padding:12px 14px;border-radius:0 10px 10px 0;margin-bottom:12px;font-size:14.5px}
+.callout.red{border-color:var(--red);background:rgba(255,89,100,.06)}
+.callout.green{border-color:var(--green);background:rgba(55,211,155,.06)}
+.callout.blue{border-color:var(--blue);background:rgba(90,169,255,.06)}
+.quote{font-style:italic;color:var(--muted);border-left:2px solid var(--purple);padding-left:12px;margin-top:10px}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;min-width:520px;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:12.5px}
+th{text-align:left;color:var(--muted);font-weight:400;font-size:11px;text-transform:uppercase;padding:8px 8px;border-bottom:1px solid var(--border)}
+td{padding:9px 8px;border-bottom:1px solid var(--border)}
+td.prose{font-family:'DM Sans',sans-serif;font-size:13.5px}
+tr:last-child td{border-bottom:none}
+.pos{color:var(--green)}.neg{color:var(--red)}.amb{color:var(--accent)}
+.chart{position:relative;height:270px}
+.tag{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:2px 8px;border-radius:10px;margin-right:6px;vertical-align:middle}
+.t-g{background:rgba(55,211,155,.12);color:var(--green)}.t-r{background:rgba(255,89,100,.12);color:var(--red)}.t-b{background:rgba(90,169,255,.12);color:var(--blue)}.t-p{background:rgba(180,140,255,.12);color:var(--purple)}
+.grid2{display:grid;gap:12px}@media(min-width:760px){.grid2{grid-template-columns:1fr 1fr}}
+.item{padding:12px 0;border-bottom:1px solid var(--border)}.item:last-child{border-bottom:none}
+.item b{display:block;margin-bottom:3px}
+.item span{color:var(--muted);font-size:14px}
+.stage{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}
+@media(min-width:700px){.stage{grid-template-columns:repeat(4,1fr)}}
+.sc{background:var(--panel);border:1px solid rgba(55,211,155,.35);border-radius:12px;padding:12px}
+.sc .l{font-size:12px;color:var(--muted)}.sc .v{font-family:'JetBrains Mono',monospace;color:var(--green);font-weight:600;margin-top:4px}
+.sc .r{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--faint);margin-top:3px}
+.foot{color:var(--faint);font-size:12px;text-align:center;margin-top:24px}
+</style>
+</head>
+<body>
+<nav id="tabs">
+  <button class="active" data-tab="overview">Overview</button>
+  <button data-tab="business">Business</button>
+  <button data-tab="growth">Growth</button>
+  <button data-tab="valuation">Valuation</button>
+  <button data-tab="governance">Ownership</button>
+  <button data-tab="risks">Catalysts &amp; Risks</button>
+  <button data-tab="technicals">Chart Trend</button>
+</nav>
+
+<header>
+  <div class="ticker">NSE: INDGN · DEEP DIVE</div>
+  <h1>Indegene Ltd</h1>
+  <p class="summary">A specialist that helps pharma companies sell and explain their medicines (launches, marketing, medical writing), not a generic IT vendor. Sales are growing ~35–40% a year, the company has no debt, and profit margins are in a planned dip that management says ends by Q4 FY27.</p>
+  <div class="badges">
+    <span class="badge b-green">Weinstein Stage 2 · 4/4 PASS</span>
+    <span class="badge b-green">Zero debt · Net cash</span>
+    <span class="badge b-amber">Margin dip · recovery dated Q4 FY27</span>
+    <span class="badge b-blue">P/E slightly above own history</span>
+  </div>
+</header>
+
+<section class="kpis">
+  <div class="kpi"><div class="l">Market cap</div><div class="v">₹14,141 Cr</div><div class="s">Price ₹586.8</div></div>
+  <div class="kpi"><div class="l">Sales growth (Q2 FY27)</div><div class="v pos">+39.5%</div><div class="s">TTM +35.8%</div></div>
+  <div class="kpi"><div class="l">P/E</div><div class="v">34.3x</div><div class="s">3-yr median 32.4x</div></div>
+  <div class="kpi"><div class="l">Operating margin (TTM)</div><div class="v amb">16.5%</div><div class="s">Target 19–20% by Q4 FY27</div></div>
+</section>
+
+<main>
+
+<!-- OVERVIEW -->
+<section class="panel active" id="overview">
+  <h2>Verdict at a glance</h2>
+  <p class="desc">The one-screen summary of the whole report.</p>
+  <div class="callout">Fast-growing, debt-free pharma-marketing specialist going through a deliberate, dated margin dip. The stock already prices in the growth; a re-rating depends on margins recovering and the first $50mn client arriving.</div>
+  <div class="grid2">
+    <div class="card"><h3>What works</h3><ul>
+      <li>Sales growing 30%+ (acquisitions plus gains from AI-led work)</li>
+      <li>No borrowings; net cash ₹237 Cr</li>
+      <li>Strong cash generation: FY26 operating cash ₹651 Cr = 162% of profit</li>
+      <li>Stock in an uptrend (Weinstein Stage 2, all four checks passed)</li>
+    </ul></div>
+    <div class="card"><h3>What to watch</h3><ul>
+      <li>Margins fell from 19.5% (FY24) to ~16.5% — recovery must land by Q4 FY27</li>
+      <li>Top 10 clients = ~49% of sales</li>
+      <li>Open tax demands and a US class-action settlement awaiting court approval</li>
+      <li>Valuation leaves little room if the margin plan slips</li>
+    </ul></div>
+  </div>
+  <div class="card"><h3>Bottom line</h3>
+    <p>At 34.3x earnings versus a 32.4x three-year median, the market is already paying for the growth. The case for a higher valuation rests on (1) margins getting back to 19%+ and (2) Tectonic becoming the first $50mn+ account. Technically the stock is in Stage 2 (advancing).</p>
+    <p style="color:var(--faint);font-size:13px">This is an analytical view, not buy/sell advice.</p>
+  </div>
+</section>
+
+<!-- BUSINESS -->
+<section class="panel" id="business">
+  <h2>Theme &amp; business segments</h2>
+  <p class="desc">What Indegene does and how it earns money.</p>
+  <div class="callout blue">Indegene is paid from a pharma client's <b>sales and marketing budget</b> (bought by CMOs), not its IT budget (bought by CIOs) — so it is less exposed to IT cost-cutting.</div>
+  <div class="card">
+    <p class="quote">"Any IT vendor sits on the cost side of the budget, bought by the technology organization and measured on efficiency and arbitrage and is therefore exposed to cost cutting. We sit on the other side." — Management</p>
+  </div>
+  <div class="card"><h3>Revenue mix by segment (Q2 FY27)</h3><div class="chart"><canvas id="segChart"></canvas></div></div>
+  <div class="card"><h3>Four engines, one AI backbone</h3>
+    <div class="tw"><table>
+      <tr><th>Segment</th><th>Share</th><th>Margin (PBIT)</th><th>What it does</th></tr>
+      <tr><td>Enterprise Commercial</td><td>71%</td><td>~16.3%</td><td class="prose">Multi-channel marketing, content, analytics; contracts priced on results, sold to marketing heads</td></tr>
+      <tr><td>Enterprise Medical</td><td>25%</td><td class="pos">~22.7%</td><td class="prose">Medical writing, regulatory work, drug-safety monitoring (pharmacovigilance) — required by regulation, so less discretionary</td></tr>
+      <tr><td>Others (incl. Clinical)</td><td>4%</td><td>~break-even</td><td class="prose">Clinical trials, patient recruitment — the next growth platform being built</td></tr>
+    </table></div>
+  </div>
+  <div class="card"><h3>Why AI helps Indegene, not just its clients</h3>
+    <div class="item"><b>Pay-for-results pricing</b><span>60%+ of revenue is priced on output/outcome, so when AI makes work cheaper, Indegene keeps the efficiency gain.</span></div>
+    <div class="item"><b>Tectonic (GenAI transformation model)</b><span>2x faster at 40% lower spend. Quarterly run-rate grew from ~$1mn to $1.7mn, with contracted levels above $2mn/quarter at the largest client. Live in Germany, Spain and Canada.</span></div>
+    <div class="item"><b>Agentic AI win</b><span>A GenAI pilot did in days what agencies take months to do — winning primary-agency status for a top-20 pharma drug launch.</span></div>
+    <div class="item"><b>Revenue per employee</b><span>$79,600 TTM, up from ~$69,000 a year ago (claimed as industry-leading).</span></div>
+  </div>
+</section>
+
+<!-- GROWTH -->
+<section class="panel" id="growth">
+  <h2>Growth &amp; financial trajectory</h2>
+  <p class="desc">Sales, profit, margins, cash and balance sheet over five years.</p>
+  <div class="callout">Sales more than doubled from FY22 to TTM, but profit is flat since FY25 because margins were deliberately squeezed by investment. Management has dated the recovery: <b>19–20% EBITDA margin by Q4 FY27</b>.</div>
+  <div class="card"><h3>Revenue &amp; profit (₹ Cr)</h3><div class="chart"><canvas id="revChart"></canvas></div></div>
+  <div class="card"><h3>Margins — the planned dip</h3><div class="chart"><canvas id="marginChart"></canvas></div></div>
+  <div class="card"><h3>The numbers</h3>
+    <div class="tw"><table>
+      <tr><th>Period</th><th>Revenue ₹Cr</th><th>Growth</th><th>Op. margin</th><th>Profit ₹Cr</th><th>Net margin</th></tr>
+      <tr><td>FY22</td><td>1,665</td><td class="pos">+72.3%</td><td>17.2%</td><td>163</td><td>9.8%</td></tr>
+      <tr><td>FY23</td><td>2,306</td><td class="pos">+38.5%</td><td>17.2%</td><td>266</td><td>11.5%</td></tr>
+      <tr><td>FY24</td><td>2,590</td><td class="pos">+12.3%</td><td>19.5%</td><td>337</td><td>13.0%</td></tr>
+      <tr><td>FY25</td><td>2,839</td><td class="pos">+9.6%</td><td>18.8%</td><td>407</td><td>14.3%</td></tr>
+      <tr><td>FY26</td><td>3,510</td><td class="pos">+23.6%</td><td>17.6%</td><td>401</td><td>11.4%</td></tr>
+      <tr><td>TTM</td><td>4,131</td><td class="pos">+35.8%</td><td>16.5%</td><td>411</td><td>9.9%</td></tr>
+      <tr><td>Q2 FY27</td><td>1,122</td><td class="pos">+39.5%</td><td>16.6%</td><td>112</td><td>10.0%</td></tr>
+    </table></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Where the growth came from</h3><ul>
+      <li>FY26 growth from existing business (organic, constant currency): <b>12%</b>; acquisitions (BioPharm, Oct 2025; Warn; Cake Kommunikations) added the rest</li>
+      <li>Q3 FY26 organic growth: 18.3% YoY</li>
+      <li>Guidance: FY27 growth to beat FY26's 23–24%, faster in H2</li>
+    </ul></div>
+    <div class="card"><h3>Client base deepening</h3><ul>
+      <li>Active clients: <b>107</b> (+31 YoY)</li>
+      <li>Clients paying $1mn+: <b>59</b></li>
+      <li>Revenue from beyond top-20 clients: 33.4% — nearly doubled YoY</li>
+      <li>Top-10 clients: 49% of revenue; largest: 7.8%</li>
+    </ul></div>
+  </div>
+  <div class="card"><h3>Why margins dipped — and the fix</h3>
+    <p>Operating margin fell from 19.5% (FY24) to ~16.5% (TTM): ~150bps of deliberate spending on sales reach and GenAI, plus wage hikes and acquisition costs.</p>
+    <p>Management shortened the recovery window from 6–8 quarters to 6, targeting 19–20% EBITDA margin by Q4 FY27 — tied to contracted revenue (a $10mn+ results-priced marketing deal whose Q4 settlement flows mostly to profit).</p>
+    <p class="quote">"we are confident of getting back our margins to the earlier levels going into FY27" — CFO</p>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Cash quality</h3><ul>
+      <li>FY26 operating cash flow ₹651 Cr (162% of profit)</li>
+      <li>FY26 free cash flow ₹606 Cr</li>
+      <li>FY22–26: cash from operations ₹2,402 Cr vs reported profit ₹1,760 Cr — profits are real cash</li>
+    </ul></div>
+    <div class="card"><h3>Balance sheet</h3><ul>
+      <li>Net cash ₹237 Cr; zero borrowings; debt/equity 0.00</li>
+      <li>Cash &amp; investments ₹1,389.6 Cr (Q2 FY27)</li>
+      <li>Repaid ~₹400 Cr IPO-linked debt in Q1 FY25; debt-free since</li>
+      <li>Past-due assets fell ₹4,105 Cr → ₹2,834 Cr (FY25→FY26)</li>
+      <li>Days to collect payment (DSO): 69, within the guided mid-60s–70 band</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- VALUATION -->
+<section class="panel" id="valuation">
+  <h2>Valuation</h2>
+  <p class="desc">How expensive the stock is versus its own past and versus IT services.</p>
+  <div class="callout">Slightly above its own 3-year average and well above generic IT. The premium is defensible (pure life-sciences focus, results-based pricing, 30%+ growth vs low single digits for generic IT) — but it leaves little room if the margin recovery slips.</div>
+  <div class="card"><h3>Current vs own history vs industry</h3><div class="chart"><canvas id="valChart"></canvas></div></div>
+  <div class="card">
+    <div class="tw"><table>
+      <tr><th>Multiple</th><th>Current</th><th>3-yr median</th><th>Industry</th></tr>
+      <tr><td>P/E (price ÷ earnings)</td><td class="amb">34.3x</td><td>32.4x</td><td>24.2x</td></tr>
+      <tr><td>EV/EBITDA (business value ÷ operating profit)</td><td class="amb">20.6x</td><td>20.3x</td><td>10.3x</td></tr>
+      <tr><td>P/B (price ÷ book value)</td><td>4.2x</td><td>4.3x</td><td>1.5x</td></tr>
+    </table></div>
+  </div>
+  <div class="kpis" style="padding:0;margin-bottom:12px">
+    <div class="kpi"><div class="l">PEG</div><div class="v">1.68</div><div class="s">P/E ÷ growth</div></div>
+    <div class="kpi"><div class="l">FCF yield</div><div class="v">4.3%</div><div class="s">Free cash ÷ mkt cap</div></div>
+    <div class="kpi"><div class="l">Market cap</div><div class="v">₹14,141 Cr</div><div class="s">&nbsp;</div></div>
+    <div class="kpi"><div class="l">Price</div><div class="v">₹586.8</div><div class="s">&nbsp;</div></div>
+  </div>
+  <div class="card"><h3>What the street is watching</h3>
+    <p>Kotak's pre-Q2 note flagged the key swing factors: H2 FY27 growth outlook, BioPharm integration, AI uptake, and "the extent of deflation from GenAI" (i.e. how much AI shrinks the work clients pay for).</p>
+  </div>
+</section>
+
+<!-- GOVERNANCE -->
+<section class="panel" id="governance">
+  <h2>Ownership &amp; governance</h2>
+  <p class="desc">Who owns the company and any red flags in how it's run.</p>
+  <div class="callout blue"><b>0% promoter holding</b> — there is no family "promoter". Indegene is professionally managed and backed by PE funds and its founder-executives. Zero pledged shares.</div>
+  <div class="card"><h3>Shareholding</h3><div class="chart" style="height:240px"><canvas id="shChart"></canvas></div></div>
+  <div class="grid2">
+    <div class="card"><h3>Key backers</h3><ul>
+      <li>CA Dawn Investments (Carlyle)</li>
+      <li>BPC Group (Brighton Park Capital)</li>
+      <li>Nadathur Group (NS Raghavan family office)</li>
+      <li>Founders: Manish Gupta (Chairman &amp; CEO), Dr. Rajesh Nair</li>
+    </ul></div>
+    <div class="card"><h3>Board seats for investors</h3>
+      <p>Pre-IPO board nomination rights were dropped in March 2024 for the May 2024 listing, then re-granted by special resolution (Regulation 31B):</p>
+      <ul><li>Nadathur: 1 director at ≥10% holding, 2 at ≥20%</li><li>BPC and CA Dawn: 1 each while ≥10%</li></ul>
+    </div>
+  </div>
+  <div class="card"><h3>Governance flags (FY26 forensic review)</h3>
+    <div class="item"><b><span class="tag t-r">FLAG</span>Shareholder pushback</b><span>58.4% of institutional votes against one director appointment (Sept 2024).</span></div>
+    <div class="item"><b><span class="tag t-p">RECTIFIED</span>Procedural lapses</b><span>A self-reported RSU (employee share) allotment timing deviation and a ₹38 Cr IPO-account transfer breach — both fixed.</span></div>
+    <div class="item"><b><span class="tag t-r">FLAG</span>Growing group complexity</b><span>Subsidiaries rose from 18 to 28 in three years; nine small entities unaudited.</span></div>
+    <div class="item"><b><span class="tag t-g">CLEAN</span>Audit</b><span>Unqualified audit opinions FY24–FY26. Auditor rotated from BSR &amp; Co. to Deloitte after a full ten-year term.</span></div>
+  </div>
+</section>
+
+<!-- RISKS -->
+<section class="panel" id="risks">
+  <h2>Catalysts &amp; risks</h2>
+  <p class="desc">What could push the stock up — and what could go wrong.</p>
+  <div class="grid2">
+    <div class="card"><h3 class="pos">Catalysts</h3>
+      <div class="item"><b>Patent-cliff outsourcing</b><span>Top-20 pharma growing 10–12% YoY with a "very healthy and robust" launch pipeline; clients consolidating content work into AI-led partners.</span></div>
+      <div class="item"><b>Tectonic scaling</b><span>Contracted run-rate above $2mn/quarter at the largest client; management hopes it becomes the first $50mn+ account.</span></div>
+      <div class="item"><b>Results-based deal settlement</b><span>The $10mn+ annual-value marketing deal peaks in Q4 FY27 with costs already spent — a direct margin boost.</span></div>
+      <div class="item"><b>Clinical platform</b><span>$10mn annual-value clinical deal annualising in Q3 FY27; Emerging Biotech revenue +47.7% YoY on a $20mn total-value mandate.</span></div>
+      <div class="item"><b>Profit tailwinds</b><span>Acquisition amortisation drops ₹5 Cr/quarter from Q3 FY27, plus better yield on cash: ~90–95bps boost to pre-tax margin.</span></div>
+    </div>
+    <div class="card"><h3 class="neg">Risks</h3>
+      <div class="item"><b>Client concentration</b><span>Top 10 clients = 49–51% of revenue; top-20 pharma are ~60% of the addressable market.</span></div>
+      <div class="item"><b>Margin execution</b><span>The 19–20% target depends on the deal settlement landing on time. Offshore mix actually fell (83.7% → 82.1%) — a past guidance miss.</span></div>
+      <div class="item"><b>Tax &amp; legal overhangs</b><span>₹111.4 Cr transfer-pricing adjustment (no provision; dispute route filed), ₹43.7 Cr income-tax demand (AY 2023-24), ₹20.3 Cr provisioned for a US TCPA class-action settlement awaiting court approval.</span></div>
+      <div class="item"><b>Goodwill quality</b><span>Goodwill more than doubled to ₹137.6 Cr; impairment tests assume 10% growth vs actual 27% segment growth.</span></div>
+      <div class="item"><b>Long-term AI moat</b><span>Management: domain expertise defensible for 3–5 years, but "the jury is still out" beyond that.</span></div>
+      <div class="item"><b>Currency</b><span>97%+ of revenue from US/Europe. FY26 EBITDA took a ₹24.1 Cr hedge mark-to-market hit; new hedge accounting removes this from December 2026.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- TECHNICALS -->
+<section class="panel" id="technicals">
+  <h2>Stock momentum — Stage 2 check</h2>
+  <p class="desc">Is the share price in an uptrend? (Weinstein stage analysis)</p>
+  <div class="callout green"><b>All four Stage 2 tests passed.</b> Price is above a rising 30-week average and beating the market. At 6.4% below its 52-week high, it's a mature advance rather than a fresh breakout.</div>
+  <div class="stage">
+    <div class="sc"><div class="l">Price above 30-week average</div><div class="v">PASS</div><div class="r">₹586.8 vs ₹541.4</div></div>
+    <div class="sc"><div class="l">30-week average rising</div><div class="v">PASS</div><div class="r">₹541.4 &gt; ₹523.04 (40W)</div></div>
+    <div class="sc"><div class="l">Golden cross active</div><div class="v">PASS</div><div class="r">10W EMA &gt; 30W EMA · 22 wks</div></div>
+    <div class="sc"><div class="l">Beating Nifty 500</div><div class="v">PASS</div><div class="r">26-wk RS = +14</div></div>
+  </div>
+  <div class="card"><h3>Price vs moving averages (₹)</h3><div class="chart" style="height:230px"><canvas id="maChart"></canvas></div></div>
+  <div class="card">
+    <div class="tw"><table>
+      <tr><th>Check</th><th>Reading</th><th>Verdict</th></tr>
+      <tr><td>Position in 52-week range</td><td>6.4% below high · 41.7% above low</td><td class="pos">Constructive</td></tr>
+      <tr><td>RSI (14-day momentum)</td><td>48.5</td><td>Neutral</td></tr>
+    </table></div>
+  </div>
+  <p class="foot">Analytical view, not buy/sell advice. All figures from the source deep-dive report.</p>
+</section>
+
+</main>
+
+<script>
+var C = {text:"#e8edf6",muted:"#8a94a6",grid:"#17233b",accent:"#f0a500",green:"#37d39b",red:"#ff5964",blue:"#5aa9ff",purple:"#b48cff"};
+Chart.defaults.color = C.muted;
+Chart.defaults.font.family = "'JetBrains Mono', monospace";
+Chart.defaults.font.size = 11;
+Chart.defaults.borderColor = C.grid;
+
+var drawn = {};
+var chartDefs = {
+  business: function(){
+    new Chart(document.getElementById("segChart"),{type:"doughnut",
+      data:{labels:["Enterprise Commercial","Enterprise Medical","Others (incl. Clinical)"],datasets:[{data:[71,25,4],backgroundColor:[C.accent,C.blue,C.purple],borderColor:"#0a1220",borderWidth:3}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:"62%",plugins:{legend:{position:"bottom"},tooltip:{callbacks:{label:function(c){return c.label+": "+c.raw+"%";}}}}}});
+  },
+  growth: function(){
+    var yrs=["FY22","FY23","FY24","FY25","FY26","TTM"];
+    new Chart(document.getElementById("revChart"),{type:"bar",
+      data:{labels:yrs,datasets:[
+        {type:"bar",label:"Revenue",data:[1665,2306,2590,2839,3510,4131],backgroundColor:C.accent,borderRadius:4,yAxisID:"y"},
+        {type:"line",label:"Profit (PAT)",data:[163,266,337,407,401,411],borderColor:C.green,backgroundColor:C.green,tension:.3,yAxisID:"y1"}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom"}},
+        scales:{y:{position:"left",grid:{color:C.grid}},y1:{position:"right",grid:{display:false}}}}});
+    new Chart(document.getElementById("marginChart"),{type:"line",
+      data:{labels:["FY22","FY23","FY24","FY25","FY26","TTM","Q2 FY27","Q4 FY27 target"],datasets:[
+        {label:"Operating margin %",data:[17.2,17.2,19.5,18.8,17.6,16.5,16.6,null],borderColor:C.accent,backgroundColor:C.accent,tension:.3},
+        {label:"Net margin %",data:[9.8,11.5,13.0,14.3,11.4,9.9,10.0,null],borderColor:C.blue,backgroundColor:C.blue,tension:.3},
+        {label:"Target 19–20% (EBITDA)",data:[null,null,null,null,null,null,null,19.5],borderColor:C.green,backgroundColor:C.green,pointRadius:7,pointStyle:"rectRot",showLine:false}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom"}},scales:{y:{min:5,max:22,grid:{color:C.grid}}}}});
+  },
+  valuation: function(){
+    new Chart(document.getElementById("valChart"),{type:"bar",
+      data:{labels:["P/E","EV/EBITDA","P/B"],datasets:[
+        {label:"Current",data:[34.3,20.6,4.2],backgroundColor:C.accent,borderRadius:4},
+        {label:"3-yr median",data:[32.4,20.3,4.3],backgroundColor:C.blue,borderRadius:4},
+        {label:"Industry",data:[24.2,10.3,1.5],backgroundColor:"#5a6577",borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom"},tooltip:{callbacks:{label:function(c){return c.dataset.label+": "+c.raw+"x";}}}},scales:{y:{grid:{color:C.grid}}}}});
+  },
+  governance: function(){
+    new Chart(document.getElementById("shChart"),{type:"doughnut",
+      data:{labels:["Public / others","DIIs","FIIs","Promoter"],datasets:[{data:[71.8,15.82,12.40,0],backgroundColor:[C.purple,C.blue,C.accent,C.red],borderColor:"#0a1220",borderWidth:3}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:"60%",plugins:{legend:{position:"bottom"},tooltip:{callbacks:{label:function(c){return c.label+": "+c.raw+"%";}}}}}});
+  },
+  technicals: function(){
+    new Chart(document.getElementById("maChart"),{type:"bar",
+      data:{labels:["Price","30W SMA","40W SMA"],datasets:[{label:"₹",data:[586.8,541.4,523.04],backgroundColor:[C.green,C.accent,C.blue],borderRadius:4}]},
+      options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{min:450,grid:{color:C.grid}},y:{grid:{display:false}}}}});
+  }
+};
+
+function showTab(id, btn){
+  var panels = document.querySelectorAll(".panel");
+  for (var i=0;i<panels.length;i++){ panels[i].classList.toggle("active", panels[i].id===id); }
+  var btns = document.querySelectorAll("#tabs button");
+  for (var j=0;j<btns.length;j++){ btns[j].classList.toggle("active", btns[j]===btn); }
+  btn.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});
+  window.scrollTo({top:0,behavior:"smooth"});
+  if (chartDefs[id] && !drawn[id]){ drawn[id]=true; requestAnimationFrame(chartDefs[id]); }
+}
+
+var tabBtns = document.querySelectorAll("#tabs button");
+for (var k=0;k<tabBtns.length;k++){
+  tabBtns[k].addEventListener("click", function(){ showTab(this.getAttribute("data-tab"), this); });
+}
+</script>
+</body>
+</html>
