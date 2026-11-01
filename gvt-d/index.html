@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- r2r-build:17aeff36a72347b8 -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GE Vernova T&amp;D India — Deep Dive Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#04080f;--panel:#0a1220;--border:#17233b;--accent:#f0a500;--text:#e8edf6;--muted:#8a94a6;--faint:#5a6577;--red:#ff5964;--green:#37d39b;--blue:#5aa9ff;--purple:#b48cff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+nav{position:sticky;top:0;z-index:100;background:rgba(4,8,15,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none;padding:0 8px}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:0 0 auto;background:none;border:none;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:12.5px;padding:14px 13px 12px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;letter-spacing:.02em}
+nav button.active{color:var(--accent);border-bottom-color:var(--accent)}
+@media(min-width:900px){nav{justify-content:center;padding:0 24px}nav button{padding:16px 18px 14px}}
+header{padding:22px 16px 6px;max-width:1000px;margin:0 auto}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);letter-spacing:.1em;text-transform:uppercase}
+h1{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(24px,5vw,34px);line-height:1.15;margin:6px 0 10px}
+.summary{color:var(--muted);font-size:14.5px}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}
+.badge{font-family:'JetBrains Mono',monospace;font-size:11.5px;padding:5px 10px;border-radius:999px;border:1px solid}
+.b-green{color:var(--green);border-color:rgba(55,211,155,.4);background:rgba(55,211,155,.08)}
+.b-red{color:var(--red);border-color:rgba(255,89,100,.4);background:rgba(255,89,100,.08)}
+.b-amber{color:var(--accent);border-color:rgba(240,165,0,.4);background:rgba(240,165,0,.08)}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:14px 16px;max-width:1000px;margin:0 auto}
+@media(min-width:700px){.kpis{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.kpi .l{font-size:11.5px;color:var(--muted)}
+.kpi .v{font-family:'JetBrains Mono',monospace;font-size:21px;font-weight:600;margin-top:2px}
+.kpi .s{font-size:11px;color:var(--faint);font-family:'JetBrains Mono',monospace}
+main{max-width:1000px;margin:0 auto;padding:6px 16px 60px}
+.panel{display:none}.panel.active{display:block}
+h2{font-family:'Syne',sans-serif;font-weight:700;font-size:22px;margin:14px 0 2px}
+.desc{color:var(--muted);font-size:13.5px;margin-bottom:14px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px}
+.card h3{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin-bottom:8px}
+.card p+p{margin-top:8px}
+.card ul{padding-left:18px}.card li{margin:6px 0}
+.callout{border-left:3px solid var(--accent);background:rgba(240,165,0,.06);padding:12px 14px;border-radius:0 10px 10px 0;margin-bottom:12px;font-size:14.5px}
+.callout.red{border-color:var(--red);background:rgba(255,89,100,.06)}
+.callout.green{border-color:var(--green);background:rgba(55,211,155,.06)}
+.mono{font-family:'JetBrains Mono',monospace}
+.muted{color:var(--muted)}.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--accent)}
+.tw{overflow-x:auto;margin:4px -4px 0;padding:0 4px}
+table{width:100%;min-width:520px;border-collapse:collapse;font-size:13px}
+th,td{text-align:right;padding:9px 8px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace}
+th{color:var(--muted);font-weight:400;font-size:11.5px}
+th:first-child,td:first-child{text-align:left}
+td.txt{font-family:'DM Sans',sans-serif;text-align:left}
+.chartbox{position:relative;height:280px}
+.grid2{display:grid;gap:12px}@media(min-width:760px){.grid2{grid-template-columns:1fr 1fr}}
+.tag{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:2px 7px;border-radius:6px;margin-right:6px;vertical-align:1px}
+.t-blue{color:var(--blue);background:rgba(90,169,255,.1)}.t-purple{color:var(--purple);background:rgba(180,140,255,.1)}.t-amber{color:var(--accent);background:rgba(240,165,0,.1)}.t-red{color:var(--red);background:rgba(255,89,100,.1)}
+.src{font-size:11.5px;color:var(--faint);margin-top:8px}
+.score{display:flex;gap:6px;margin:10px 0}.score span{flex:1;height:8px;border-radius:4px}
+footer{text-align:center;color:var(--faint);font-size:11.5px;padding:20px 16px 40px}
+</style>
+</head>
+<body>
+<nav id="tabs">
+  <button data-t="theme" class="active">Theme</button>
+  <button data-t="segments">Segments</button>
+  <button data-t="financials">Financials</button>
+  <button data-t="catalysts">Catalysts</button>
+  <button data-t="valuation">Valuation</button>
+  <button data-t="governance">Promoter</button>
+  <button data-t="risks">Risks</button>
+  <button data-t="momentum">Momentum</button>
+  <button data-t="verdict">Verdict</button>
+</nav>
+
+<header>
+  <div class="eyebrow">Equity Deep Dive · NSE/BSE · Capital Goods</div>
+  <h1>GE Vernova T&amp;D India Ltd</h1>
+  <p class="summary">A debt-free company earning about ₹59 on every ₹100 it puts to work (ROCE 59%), riding India's power-grid build-out with ₹21,440 Cr of orders in hand and 30%+ growth guidance. The business is exceptional. The problem is the price (71.6× earnings) and the chart: the stock is in a correction, not an uptrend.</p>
+  <div class="badges">
+    <span class="badge b-green">Fundamentals: Exceptional</span>
+    <span class="badge b-amber">Valuation: Rich, below own median</span>
+    <span class="badge b-red">Momentum: NOT Stage 2</span>
+  </div>
+</header>
+
+<section class="kpis">
+  <div class="kpi"><div class="l">Share price</div><div class="v">₹4,020</div><div class="s">29% below 52W high</div></div>
+  <div class="kpi"><div class="l">Price / earnings (P/E)</div><div class="v a">71.6×</div><div class="s">3Y median 95.5×</div></div>
+  <div class="kpi"><div class="l">Return on capital (ROCE)</div><div class="v g">58.9%</div><div class="s">TTM · debt-free</div></div>
+  <div class="kpi"><div class="l">Order backlog</div><div class="v">₹21,440 Cr</div><div class="s">&gt;3 yrs of FY26 revenue</div></div>
+</section>
+
+<main>
+<!-- THEME -->
+<section class="panel active" id="theme">
+  <h2>Core Theme: the grid supercycle</h2>
+  <p class="desc">Why India's power-transmission build-out is the story behind this stock.</p>
+  <div class="callout">A pure-play bet on India building and upgrading its power grid — with exports and data centers as extra engines.</div>
+  <div class="card">
+    <h3>Who they are</h3>
+    <p>The listed Indian arm of GE Vernova's global grid business, manufacturing in India since 1958. Roughly half of India's power flow is managed through its technology.</p>
+    <p>Strategy: <b>"India for the World"</b> — make high-voltage equipment locally, build complete substations for Indian utilities, and export to 60+ countries.</p>
+  </div>
+  <div class="card">
+    <h3>Why the theme works now</h3>
+    <ul>
+      <li><span class="tag t-amber">CAPEX</span><b>Transmission spending doubling.</b> India's transformer capacity is expected to nearly double from 14.5 lakh MVA (Mar 2026) to 24.1 lakh MVA by FY32 — about ₹9.2 trillion of investment.</li>
+      <li><span class="tag t-blue">EXPORTS</span><b>Global shortage.</b> The world is short of high-voltage equipment, opening export doors that didn't exist last cycle. Export demand leans to higher-value products (HVDC, grid modernisation, GIS), which helps prices and margins.</li>
+      <li><span class="tag t-purple">HVDC</span><b>The long-distance power-line era.</b> Won its first big HVDC (high-voltage direct current) project in FY26 — the 2.5 GW Khavda–South Olpad link — plus a 2×500 MW Chandrapur refurbishment.</li>
+      <li><span class="tag t-blue">DATA CENTERS</span><b>Data centers need grid hookups.</b> India has under 2 GW of data-center capacity versus 13–18 GW expected by 2030 — a grid-connection opportunity of ~₹85,000–1,05,000 Cr for the sector.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- SEGMENTS -->
+<section class="panel" id="segments">
+  <h2>Business Segments: three engines</h2>
+  <p class="desc">What the company actually sells.</p>
+  <div class="card">
+    <h3><span class="tag t-amber">1</span>Turnkey substations</h3>
+    <ul>
+      <li>Designs, supplies and switches on complete high-voltage substations at a fixed price. Revenue is booked as work progresses (percentage-of-completion); an average project takes ~24 months.</li>
+      <li><b>98% of the backlog</b> is with private developers, central utilities (Power Grid, NTPC) and PSUs. State electricity boards (often slow payers) are under 2%.</li>
+      <li>Builds both open-air (AIS) and compact gas-insulated (GIS) substations, 132 kV to 765 kV. Commissioned 26 substations in FY25 alone.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3><span class="tag t-blue">2</span>High-voltage equipment (the factory engine)</h3>
+    <div class="tw"><table>
+      <tr><th>Plant</th><th style="text-align:left">Makes</th></tr>
+      <tr><td>Vadodara</td><td class="txt">Transformers &amp; reactors up to 765 kV (700+ units since 2009)</td></tr>
+      <tr><td>Padappai</td><td class="txt">GIS up to 765 kV — India's first dedicated line</td></tr>
+      <tr><td>Hosur</td><td class="txt">Instrument transformers</td></tr>
+      <tr><td>Pallavaram</td><td class="txt">Relays &amp; panels</td></tr>
+      <tr><td>Noida</td><td class="txt">Digital integration</td></tr>
+    </table></div>
+    <ul style="margin-top:12px">
+      <li><b>Exports = 33% of FY26 revenue</b> (up from 17% in FY20) and 8% of the order book. New markets: Europe, South-East Asia, Middle East, Africa.</li>
+      <li><b>₹806 Cr expansion approved:</b> transformer/reactor capacity up &gt;50%, GIS/AIS up to 25%, done by end-2028, paid from own cash.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3><span class="tag t-purple">3</span>Grid automation, software &amp; services</h3>
+    <ul>
+      <li>Protection relays, bay controllers, and the GridOS software that runs the grid. #1 in India's transmission digital space, including upgrades of the Northern and Eastern Regional Load Dispatch Centres.</li>
+      <li>Long-term maintenance contracts (Delhi, Chennai airports) turn one-off projects into recurring income.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- FINANCIALS -->
+<section class="panel" id="financials">
+  <h2>Financials: a four-year turnaround</h2>
+  <p class="desc">From losses in FY22 to one of the sharpest turnarounds in Indian capital goods.</p>
+  <div class="callout green">Losses of ₹50 Cr in FY22 became a profit of ₹1,437 Cr (TTM). The profit kept from each ₹100 of sales (operating margin) went from −3.6% to 26.5%.</div>
+  <div class="card"><h3>Revenue &amp; profit (₹ Cr)</h3><div class="chartbox"><canvas id="cRev"></canvas></div></div>
+  <div class="card"><h3>Margin &amp; returns (%)</h3><div class="chartbox"><canvas id="cRet"></canvas></div></div>
+  <div class="card">
+    <h3>The full table</h3>
+    <div class="tw"><table>
+      <tr><th>Period</th><th>Revenue</th><th>OPM</th><th>PAT</th><th>ROCE</th><th>ROE</th><th>D/E</th></tr>
+      <tr><td>FY22</td><td>3,066</td><td class="r">-3.6%</td><td class="r">-50</td><td class="r">-2.4%</td><td class="r">-4.6%</td><td>0.21</td></tr>
+      <tr><td>FY23</td><td>2,773</td><td>3.7%</td><td class="r">-1.5</td><td>5.1%</td><td class="r">-0.1%</td><td>0.25</td></tr>
+      <tr><td>FY24</td><td>3,168</td><td>10.1%</td><td>181</td><td>22.7%</td><td>14.6%</td><td>0.03</td></tr>
+      <tr><td>FY25</td><td>4,292</td><td>19.1%</td><td>608</td><td>46.1%</td><td>34.3%</td><td>0.02</td></tr>
+      <tr><td>FY26</td><td>6,206</td><td>27.1%</td><td>1,233</td><td>61.3%</td><td>45.8%</td><td>0.01</td></tr>
+      <tr><td>TTM</td><td>7,201</td><td>26.5%</td><td>1,437</td><td>58.9%</td><td>43.6%</td><td>0.00</td></tr>
+    </table></div>
+    <p class="src">OPM = operating margin · PAT = net profit · ROE = return on shareholders' money · D/E = debt to equity. Source: reported financials.</p>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>FY26 highlights</h3>
+      <ul>
+        <li>Revenue <b class="g">+45%</b> to ₹6,210 Cr; profit before tax more than doubled to ₹1,650 Cr.</li>
+        <li>New orders ₹14,780 Cr (<b class="g">+37%</b>), after ₹12,660 Cr in FY25 (+102%).</li>
+        <li>Backlog ₹21,440+ Cr, up from ₹3,720 Cr in March 2022.</li>
+        <li>Debt-free, ₹2,414 Cr cash. Free cash flow ₹1,521 Cr on operating cash flow of ₹1,710 Cr.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Latest quarter &amp; margins</h3>
+      <ul>
+        <li><b>Q2 FY27:</b> profit <b class="g">+44%</b> to ₹431 Cr on total income of ₹2,077 Cr; operating margin held at 27.1%.</li>
+        <li><b>Gross margin</b> (what's left after raw-material costs) jumped from 22.6% (FY22) to 45.3% (FY26) and 44.5% in Q2 FY27 — driven by export mix, pricing and productivity gains.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout red"><b>Margin caveat:</b> management itself said in FY21 that Power Grid bids — with ~6 months between price quote and award — are "broadly considered as winners' curse" for the industry. It is "not fully immune" to raw-material inflation.</div>
+</section>
+
+<!-- CATALYSTS -->
+<section class="panel" id="catalysts">
+  <h2>Growth Levers &amp; Catalysts</h2>
+  <p class="desc">What could drive the next leg of growth.</p>
+  <div class="callout">Management guides <b>30%+ revenue growth a year for the next 3–4 years</b>. Only ~₹1,000 Cr of capex is needed, so extra revenue flows largely to profit (operating leverage).</div>
+  <div class="card"><h3><span class="tag t-purple">HVDC</span>Barmer ±800 kV — lowest bidder (L1)</h3><p>Power Grid confirmed L1 status on 7 Sep 2026 for a 6,000 MW terminal station. The company's share in a typical HVDC project is 40–60%, so one win of this size can add ₹3,000–5,000 Cr in a peak execution year.</p></div>
+  <div class="card"><h3><span class="tag t-purple">HVDC</span>Khavda–South Olpad (Adani)</h3><p>2,500 MW, ±500 kV VSC terminal; ~4-year execution, with most revenue landing FY29 onwards.</p></div>
+  <div class="card"><h3><span class="tag t-purple">HVDC</span>Pipeline &amp; localisation</h3>
+    <ul>
+      <li>2–3 projects expected to tender in 2027; ~10 Rajasthan links of ~6 GW each through 2035–36; the National Electricity Plan targets 33 GW of new bipole capacity by 2032.</li>
+      <li>₹140 Cr to restart the Pallavaram LCC valve line, add a VSC-STATCOM valve line and a Noida controls facility — making the full HVDC product made in India.</li>
+    </ul></div>
+  <div class="card"><h3><span class="tag t-blue">EXPORT</span>US data-center transformers</h3><p>~$151 mn related-party approval for US transformer exports (valid till 15 May 2027); under negotiation, conclusion expected H2 FY27. Vadodara is GE Vernova's only higher-rating transformer plant in Asia.</p></div>
+  <div class="card"><h3><span class="tag t-amber">STATCOM</span>Grid-stabiliser wave</h3><p>The CEA recommends STATCOMs (devices that keep voltage stable) at all future 400/765 kV substations handling renewables. A sizable chunk of India's awards is expected in Q4 FY27.</p></div>
+  <div class="card"><h3><span class="tag t-amber">ORDERS</span>Intake tracking</h3><p>H1 FY27 new orders of ₹3,580 Cr annualise to ~₹7,160 Cr — within the ₹7,000–8,000 Cr base target.</p></div>
+</section>
+
+<!-- VALUATION -->
+<section class="panel" id="valuation">
+  <h2>Valuation: priced for perfection?</h2>
+  <p class="desc">How expensive the stock is versus its own history and its industry.</p>
+  <div class="callout">Expensive in absolute terms, but cheaper than its own 3- and 5-year history. A PEG of 0.73 (price-to-earnings divided by growth) says the 30%+ growth isn't fully priced in.</div>
+  <div class="card"><h3>Multiples: current vs history vs industry</h3><div class="chartbox"><canvas id="cVal"></canvas></div></div>
+  <div class="card">
+    <div class="tw"><table>
+      <tr><th>Multiple</th><th>Current</th><th>3-Yr Median</th><th>5-Yr Median</th><th>Industry</th></tr>
+      <tr><td>P/E</td><td class="a">71.6×</td><td>95.5×</td><td>98.3×</td><td>69.2×</td></tr>
+      <tr><td>EV/EBITDA</td><td class="a">53.1×</td><td>64.0×</td><td>64.0×</td><td>48.8×</td></tr>
+      <tr><td>P/B</td><td class="a">38.3×</td><td>41.5×</td><td>41.5×</td><td>20.3×</td></tr>
+    </table></div>
+    <p class="src">PEG 0.73 · FCF yield 1.5%. P/B = price vs book value; EV/EBITDA = whole-company value vs operating profit.</p>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3 class="g">The bull read</h3><p>A 71.6× P/E against ~44% TTM profit growth is defensible if execution holds — and it's roughly in line with the industry (69.2×) despite far better growth and returns.</p></div>
+    <div class="card"><h3 class="r">The bear read</h3><p>At 38.3× book value and a 1.5% free-cash-flow yield, there's no margin of safety if growth slips to 15–20%. The multiple shrinking (derating) is the single biggest valuation risk.</p></div>
+  </div>
+</section>
+
+<!-- GOVERNANCE -->
+<section class="panel" id="governance">
+  <h2>Promoter &amp; Governance</h2>
+  <p class="desc">Who owns it and how cleanly it's run.</p>
+  <div class="grid2">
+    <div class="card"><h3>Shareholding (%)</h3><div class="chartbox" style="height:240px"><canvas id="cHold"></canvas></div><p class="src">FII/DII approx. Remainder = public &amp; others. Zero pledged shares.</p></div>
+    <div class="card">
+      <h3>Promoter</h3>
+      <ul>
+        <li>GE Vernova LLC holds <b>51.0%</b>, down from ~75% after two Offers for Sale in late 2024 to meet minimum public shareholding rules.</li>
+        <li><b class="g">Zero pledged shares.</b></li>
+        <li>Foreign institutions ~19.2%, domestic institutions ~21.1%.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card">
+    <h3 class="g">What looks clean</h3>
+    <ul>
+      <li><b>Royalty to parent is steady:</b> FY26 ~₹190 Cr (~3% of revenue) vs ~₹140 Cr (~3.3%) in FY25; formula unchanged for years.</li>
+      <li><b>Free parent guarantee:</b> GE Vernova Inc. guarantees up to ₹5,100 Cr for cash-pool lending to LM Wind and "shall not charge any guarantee commission".</li>
+      <li><b>Clean audits:</b> seven straight unqualified opinions from Deloitte; reappointment proposed through 2031.</li>
+    </ul>
+  </div>
+  <div class="callout red"><b>Watch items:</b> sales to group companies (related-party) rose to 29% of total sales in FY26 (from 18.3%). Two customers are ~21% and ~11% of FY26 revenue. The parent guarantee behind cash-pool lending ends <b>31 Dec 2026</b>.</div>
+</section>
+
+<!-- RISKS -->
+<section class="panel" id="risks">
+  <h2>Key Risks</h2>
+  <p class="desc">What could break the thesis.</p>
+  <div class="card"><h3><span class="tag t-red">HIGH</span>Cash lent to the group</h3><p>The company is "debt-free" but lends to a GE group cash pool (₹5,783 Cr inter-corporate deposit at Mar 2025; ₹971 Cr outstanding at Mar 2026). It's backed by a parent guarantee that expires <b>31 December 2026</b>. Shareholder approval for higher lending limits is pending.</p></div>
+  <div class="card"><h3><span class="tag t-red">HIGH</span>Multiple derating</h3><p>At 71.6× earnings and 38.3× book, any growth disappointment (HVDC tender delays, STATCOM slippage) would hit the share price harder than it hits earnings.</p></div>
+  <div class="card"><h3><span class="tag t-amber">MED</span>Raw-material swings</h3><p>Exposure to CRGO steel and copper; management has acknowledged "winners' curse" dynamics on Power Grid bids.</p></div>
+  <div class="card"><h3><span class="tag t-amber">MED</span>Customer concentration</h3><p>Two unnamed customers make up ~21% and ~11% of FY26 revenue.</p></div>
+  <div class="card"><h3><span class="tag t-amber">MED</span>Lumpy HVDC revenue</h3><p>Multi-year projects pay on milestones, so quarterly numbers jump around. The US data-center order has already slipped from Q1 to H2 FY27.</p></div>
+  <div class="card"><h3><span class="tag t-blue">LOW</span>Litigation tail</h3><p>Contingent liabilities include ₹267 Cr of GST/sales-tax demands and a draft income-tax order of ₹37.25 Cr plus interest. A Chennai leasehold defect has appeared in every audit report since FY22.</p></div>
+  <div class="card"><h3><span class="tag t-blue">LOW</span>Promoter selling overhang</h3><p>Promoters have already cut their stake by 24 points. Further sales — for shareholding rules or parent capital needs — can't be ruled out.</p></div>
+</section>
+
+<!-- MOMENTUM -->
+<section class="panel" id="momentum">
+  <h2>Momentum: Stage 2 check</h2>
+  <p class="desc">Stan Weinstein framework — is the stock in a confirmed uptrend?</p>
+  <div class="callout red"><b>NOT in Stage 2.</b> Four of five conditions fail. The stock is in a Stage 3 topping / correction phase after its big multi-year rally.</div>
+  <div class="kpis" style="padding:0 0 12px">
+    <div class="kpi"><div class="l">Price</div><div class="v">₹4,020</div></div>
+    <div class="kpi"><div class="l">52W high</div><div class="v">₹5,650</div><div class="s r">−29%</div></div>
+    <div class="kpi"><div class="l">52W low</div><div class="v">₹2,530</div><div class="s g">+59%</div></div>
+    <div class="kpi"><div class="l">200-DMA zone</div><div class="v">₹4,150</div><div class="s">being tested</div></div>
+  </div>
+  <div class="card"><h3>Returns (%)</h3><div class="chartbox" style="height:220px"><canvas id="cRetn"></canvas></div></div>
+  <div class="card">
+    <h3>Weinstein scorecard</h3>
+    <div class="score"><span style="background:var(--red)"></span><span style="background:var(--green)"></span><span style="background:var(--red)"></span><span style="background:var(--red)"></span><span style="background:var(--red)"></span></div>
+    <div class="tw"><table>
+      <tr><th>Condition</th><th>Data</th><th>Verdict</th></tr>
+      <tr><td class="txt">Price above 30-week average</td><td>₹4,020 vs ₹4,451</td><td class="r">❌ Fails</td></tr>
+      <tr><td class="txt">30W avg above 40W avg (long trend rising)</td><td>₹4,451 &gt; ₹4,252</td><td class="g">✅ Passes</td></tr>
+      <tr><td class="txt">Golden cross 10W/30W active</td><td>Death cross, 2 weeks</td><td class="r">❌ Fails</td></tr>
+      <tr><td class="txt">Beating Nifty 500 (26W relative strength)</td><td>CRS −7</td><td class="r">❌ Fails</td></tr>
+      <tr><td class="txt">Near 52-week high</td><td>28.9% below</td><td class="r">❌ Fails</td></tr>
+    </table></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3 class="r">Bearish trigger</h3><p>A decisive break below the 200-day average (~₹4,150) would raise the risk of Stage 4 — a proper downtrend.</p></div>
+    <div class="card"><h3 class="g">Bullish trigger</h3><p>Reclaiming ₹4,450 (the 30-week average) with a fresh golden cross would be the first sign of a new Stage 2 attempt.</p></div>
+  </div>
+</section>
+
+<!-- VERDICT -->
+<section class="panel" id="verdict">
+  <h2>Bottom Line</h2>
+  <p class="desc">The whole report in one table.</p>
+  <div class="card">
+    <div class="tw"><table>
+      <tr><th>Dimension</th><th style="text-align:left">Read</th></tr>
+      <tr><td>Theme</td><td class="txt"><span class="g">Strong</span> — transmission supercycle, HVDC, exports, data centers</td></tr>
+      <tr><td>Growth</td><td class="txt"><span class="g">Exceptional</span> — 30%+ guide, ₹21,440 Cr backlog, 27% OPM</td></tr>
+      <tr><td>Valuation</td><td class="txt"><span class="a">Rich but below own median</span> — PEG 0.73; no margin of safety</td></tr>
+      <tr><td>Promoter</td><td class="txt"><span class="g">GE Vernova LLC 51%, zero pledge</span> — watch cash-pool guarantee expiry</td></tr>
+      <tr><td>Risk</td><td class="txt"><span class="r">Derating, commodities, related-party lending, customer concentration</span></td></tr>
+      <tr><td>Momentum</td><td class="txt"><span class="r">Not Stage 2</span> — Stage 3 correction, testing 200-DMA</td></tr>
+    </table></div>
+  </div>
+  <div class="callout">The business deserves a premium; the current entry point has no technical confirmation.</div>
+  <div class="card">
+    <h3>Watch list before treating the correction as over</h3>
+    <ul>
+      <li><span class="tag t-purple">ORDER</span>Barmer HVDC booking</li>
+      <li><span class="tag t-blue">ORDER</span>US data-center order concluded in H2 FY27</li>
+      <li><span class="tag t-red">GOV</span>Parent guarantee renewed past 31 Dec 2026</li>
+      <li><span class="tag t-amber">PRICE</span>Price reclaims the 30-week average (~₹4,450)</li>
+    </ul>
+  </div>
+</section>
+</main>
+<footer>Dashboard view of the GE Vernova T&amp;D India deep-dive report. No figures added beyond the source report. Not investment advice.</footer>
+
+<script>
+var drawn = {};
+var C = {text:"#e8edf6", muted:"#8a94a6", grid:"#17233b", amber:"#f0a500", green:"#37d39b", red:"#ff5964", blue:"#5aa9ff", purple:"#b48cff"};
+if (window.Chart) {
+  Chart.defaults.color = C.muted;
+  Chart.defaults.font.family = "'JetBrains Mono', monospace";
+  Chart.defaults.font.size = 11;
+  Chart.defaults.borderColor = C.grid;
+}
+var yrs = ["FY22","FY23","FY24","FY25","FY26","TTM"];
+var charts = {
+  financials: function () {
+    new Chart(document.getElementById("cRev"), {
+      type: "bar",
+      data: {labels: yrs, datasets: [
+        {label: "Revenue", data: [3066,2773,3168,4292,6206,7201], backgroundColor: C.blue, borderRadius: 4},
+        {label: "PAT", data: [-50,-1.5,181,608,1233,1437], backgroundColor: C.amber, borderRadius: 4}
+      ]},
+      options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: "bottom"}}}
+    });
+    new Chart(document.getElementById("cRet"), {
+      type: "line",
+      data: {labels: yrs, datasets: [
+        {label: "OPM %", data: [-3.6,3.7,10.1,19.1,27.1,26.5], borderColor: C.amber, backgroundColor: C.amber, tension: .3},
+        {label: "ROCE %", data: [-2.4,5.1,22.7,46.1,61.3,58.9], borderColor: C.green, backgroundColor: C.green, tension: .3},
+        {label: "ROE %", data: [-4.6,-0.1,14.6,34.3,45.8,43.6], borderColor: C.purple, backgroundColor: C.purple, tension: .3}
+      ]},
+      options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: "bottom"}}}
+    });
+  },
+  valuation: function () {
+    new Chart(document.getElementById("cVal"), {
+      type: "bar",
+      data: {labels: ["P/E","EV/EBITDA","P/B"], datasets: [
+        {label: "Current", data: [71.6,53.1,38.3], backgroundColor: C.amber, borderRadius: 4},
+        {label: "3-Yr median", data: [95.5,64.0,41.5], backgroundColor: C.blue, borderRadius: 4},
+        {label: "5-Yr median", data: [98.3,64.0,41.5], backgroundColor: C.purple, borderRadius: 4},
+        {label: "Industry", data: [69.2,48.8,20.3], backgroundColor: "#5a6577", borderRadius: 4}
+      ]},
+      options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: "bottom"}}}
+    });
+  },
+  governance: function () {
+    new Chart(document.getElementById("cHold"), {
+      type: "doughnut",
+      data: {labels: ["Promoter (GE Vernova LLC)","FII","DII","Public & others"], datasets: [
+        {data: [51.0,19.2,21.1,8.7], backgroundColor: [C.amber,C.blue,C.purple,"#5a6577"], borderColor: "#0a1220", borderWidth: 2}
+      ]},
+      options: {responsive: true, maintainAspectRatio: false, cutout: "62%", plugins: {legend: {position: "bottom"}}}
+    });
+  },
+  momentum: function () {
+    var v = [-4.3,-4.3,-10.0,31.2];
+    new Chart(document.getElementById("cRetn"), {
+      type: "bar",
+      data: {labels: ["1M","3M","6M","1Y"], datasets: [
+        {label: "Return %", data: v, backgroundColor: v.map(function (x) { return x < 0 ? C.red : C.green; }), borderRadius: 4}
+      ]},
+      options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {display: false}}}
+    });
+  }
+};
+function show(id) {
+  document.querySelectorAll(".panel").forEach(function (p) { p.classList.toggle("active", p.id === id); });
+  document.querySelectorAll("#tabs button").forEach(function (b) {
+    var on = b.getAttribute("data-t") === id;
+    b.classList.toggle("active", on);
+    if (on) b.scrollIntoView({behavior: "smooth", inline: "center", block: "nearest"});
+  });
+  window.scrollTo({top: 0, behavior: "smooth"});
+  if (charts[id] && !drawn[id] && window.Chart) { drawn[id] = true; charts[id](); }
+}
+document.querySelectorAll("#tabs button").forEach(function (b) {
+  b.addEventListener("click", function () { show(b.getAttribute("data-t")); });
+});
+</script>
+</body>
+</html>
