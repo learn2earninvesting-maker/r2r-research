@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- r2r-build:00d772ed561c45be -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carborundum Universal (CUMI) — Deep Dive Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#04080f;--panel:#0a1220;--border:#17233b;--accent:#f0a500;--text:#e8edf6;--muted:#8a94a6;--faint:#5a6577;--red:#ff5964;--green:#37d39b;--blue:#5aa9ff;--purple:#b48cff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+nav{position:sticky;top:0;z-index:100;background:rgba(4,8,15,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none;padding:0 8px}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:0 0 auto;background:none;border:none;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.04em;text-transform:uppercase;padding:14px 12px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+nav button.active{color:var(--accent);border-bottom-color:var(--accent)}
+header{padding:22px 16px 10px;max-width:1000px;margin:0 auto}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);letter-spacing:.1em;text-transform:uppercase}
+h1{font-family:'Syne',sans-serif;font-weight:800;font-size:26px;line-height:1.15;margin:6px 0 10px}
+h2{font-family:'Syne',sans-serif;font-weight:700;font-size:21px;margin-bottom:4px}
+h3{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin-bottom:8px}
+.lede{color:var(--muted);font-size:14.5px}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.badge{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:5px 10px;border-radius:999px;border:1px solid}
+.b-red{color:var(--red);border-color:rgba(255,89,100,.4);background:rgba(255,89,100,.08)}
+.b-green{color:var(--green);border-color:rgba(55,211,155,.4);background:rgba(55,211,155,.08)}
+.b-amber{color:var(--accent);border-color:rgba(240,165,0,.4);background:rgba(240,165,0,.08)}
+.b-blue{color:var(--blue);border-color:rgba(90,169,255,.4);background:rgba(90,169,255,.08)}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:10px 16px 4px;max-width:1000px;margin:0 auto}
+@media(min-width:700px){.kpis{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px}
+.kpi .l{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em}
+.kpi .v{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;margin-top:4px}
+.kpi .s{font-size:12px;color:var(--muted)}
+main{max-width:1000px;margin:0 auto;padding:12px 16px 60px}
+.panel{display:none}.panel.active{display:block}
+.sec-desc{color:var(--muted);font-size:14px;margin-bottom:14px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px}
+.card p+p{margin-top:8px}
+.card ul{padding-left:18px}.card li{margin-bottom:7px}
+.callout{border-left:3px solid var(--accent);background:rgba(240,165,0,.06);padding:12px 14px;border-radius:0 10px 10px 0;margin-bottom:12px;font-size:14.5px}
+.callout.red{border-color:var(--red);background:rgba(255,89,100,.06)}
+.callout.green{border-color:var(--green);background:rgba(55,211,155,.06)}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;min-width:520px;border-collapse:collapse;font-size:13px}
+th,td{padding:9px 8px;text-align:left;border-bottom:1px solid var(--border)}
+th{font-family:'JetBrains Mono',monospace;font-size:10.5px;text-transform:uppercase;color:var(--faint);letter-spacing:.05em;font-weight:600}
+td.n{font-family:'JetBrains Mono',monospace;white-space:nowrap}
+tr.tot td{font-weight:700;color:var(--accent)}
+.pos{color:var(--green)}.neg{color:var(--red)}.amb{color:var(--accent)}.mut{color:var(--muted)}
+.mono{font-family:'JetBrains Mono',monospace}
+.chart{position:relative;height:260px}
+.grid2{display:grid;gap:12px}
+@media(min-width:800px){.grid2{grid-template-columns:1fr 1fr}}
+.lever{display:flex;gap:10px;align-items:flex-start}
+.lever .tag{flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 7px;border-radius:6px;background:rgba(90,169,255,.1);color:var(--blue);margin-top:2px}
+.foot{color:var(--faint);font-size:12px;text-align:center;margin-top:24px}
+@media(min-width:900px){nav{justify-content:center}h1{font-size:32px}}
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <button class="active" data-tab="business">Business</button>
+  <button data-tab="growth">Growth</button>
+  <button data-tab="valuation">Valuation</button>
+  <button data-tab="governance">Governance</button>
+  <button data-tab="risks">Risks</button>
+  <button data-tab="momentum">Chart Stage</button>
+  <button data-tab="verdict">Bottom Line</button>
+</nav>
+
+<header>
+  <div class="eyebrow">Murugappa Group · NSE: CARBORUNIV · Deep Dive</div>
+  <h1>Carborundum Universal (CUMI)</h1>
+  <p class="lede">Sales are speeding up (+13.2% in Q2 FY27), but reported profit is being dragged down by a Russian subsidiary under US sanctions and loss-making units in Europe. The share price has slipped below its 30-week average, so it is not in a healthy uptrend (Stage 2) right now.</p>
+  <div class="badges">
+    <span class="badge b-red">NOT IN STAGE 2</span>
+    <span class="badge b-green">CRISIL AA+ / STABLE</span>
+    <span class="badge b-amber">PROFIT RECOVERY = FY28 STORY</span>
+    <span class="badge b-blue">0% PLEDGE</span>
+  </div>
+</header>
+
+<section class="kpis">
+  <div class="kpi"><div class="l">Share price</div><div class="v">₹1,039.40</div><div class="s">−24.1% from 52-wk high ₹1,369</div></div>
+  <div class="kpi"><div class="l">Market value</div><div class="v">₹19,802 Cr</div><div class="s">Market cap</div></div>
+  <div class="kpi"><div class="l">Price ÷ profit</div><div class="v amb">133.4x</div><div class="s">P/E on depressed TTM profit</div></div>
+  <div class="kpi"><div class="l">Q2 FY27 sales</div><div class="v pos">+13.2%</div><div class="s">₹1,469 Cr, year-on-year</div></div>
+</section>
+
+<main>
+
+<!-- BUSINESS -->
+<section class="panel active" id="business">
+  <h2>What CUMI does</h2>
+  <p class="sec-desc">A materials-science company that owns the chain from raw mineral to finished product ("Mines to Market").</p>
+
+  <div class="card">
+    <p>CUMI turns minerals into surfaces: the grit that grinds, the ceramics that armour and insulate, and advanced powders going into fuel cells and semiconductors. Founded in 1954, it kept buying its way back into raw materials and power (backward integration) before moving up to higher-value products.</p>
+  </div>
+
+  <div class="callout">Ceramics earns about <b>₹20 of profit on every ₹100 of sales</b> (20.2% PBIT margin). The other two big businesses earn only ₹4–6. That gap is the whole investment story.</div>
+
+  <div class="card">
+    <h3>Three businesses (FY26)</h3>
+    <div class="tw"><table>
+      <thead><tr><th>Segment</th><th>Revenue</th><th>Profit margin (PBIT)</th><th>Read</th></tr></thead>
+      <tbody>
+        <tr><td>Abrasives</td><td class="n">₹2,271 Cr</td><td class="n neg">4.3%</td><td>Largest by volume; margins crushed by German losses</td></tr>
+        <tr><td>Electrominerals</td><td class="n">₹1,632 Cr</td><td class="n neg">5.6%</td><td>Raw-material engine; hit by Russia sanctions</td></tr>
+        <tr><td>Ceramics</td><td class="n">₹1,268 Cr</td><td class="n pos">20.2%</td><td>The crown jewel; structurally high-margin</td></tr>
+        <tr><td>Others</td><td class="n">₹175 Cr</td><td class="n neg">−1.1%</td><td>SEDCO, Net Access, PLUSS</td></tr>
+        <tr class="tot"><td>Total</td><td class="n">₹5,149 Cr</td><td class="n">8.6%</td><td>Down from 13.2% in FY25</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="card"><h3>Revenue vs margin by segment</h3><div class="chart"><canvas id="cSeg"></canvas></div></div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>Abrasives</h3>
+      <p>Grinding wheels, sandpaper-type products and super-hard abrasives. Sold through ~18,000 retail outlets in India and in 55+ countries. Its raw grain (fused alumina, silicon carbide) comes from CUMI's own Electrominerals unit. The 2022 German purchases (Rhodius, Awuko) added European factories but have dragged profit down.</p>
+    </div>
+    <div class="card">
+      <h3>Electrominerals</h3>
+      <p>Runs its own 12 MW hydro power plant at Maniyar and bauxite mines in Gujarat, and owns the world's largest single-site silicon carbide plant (90,000 tonnes a year) at VAW in Russia. The product mix is being moved away from commodities (85% of the basket today) toward treated grains, specialties and high-purity silicon carbide.</p>
+    </div>
+    <div class="card">
+      <h3>Ceramics</h3>
+      <p>Wear-resistant linings; metallised cylinders for vacuum interrupters (grid switchgear parts) where CUMI is world #2, supplying ABB, Siemens and Schneider; ballistic armour qualified to NATO STANAG 4; and a new ₹66 Cr Hosur facility making ceramics for semiconductor fab equipment.</p>
+    </div>
+    <div class="card">
+      <h3>Credit standing</h3>
+      <p>CRISIL re-affirmed <span class="mono pos">AA+/Stable</span> (long-term) and <span class="mono pos">A1+</span> (short-term) ratings. The standalone Indian parent has more cash than debt (net debt-free).</p>
+    </div>
+  </div>
+</section>
+
+<!-- GROWTH -->
+<section class="panel" id="growth">
+  <h2>Growth: sales up, profit down</h2>
+  <p class="sec-desc">Revenue keeps compounding; reported profit has fallen three years in a row because of one-off write-offs.</p>
+
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Period</th><th>Revenue</th><th>Growth</th><th>Operating margin (OPM)</th><th>Net profit (PAT)</th></tr></thead>
+      <tbody>
+        <tr><td>FY22</td><td class="n">₹3,325 Cr</td><td class="n pos">+26.3%</td><td class="n">16.1%</td><td class="n">₹350 Cr</td></tr>
+        <tr><td>FY24</td><td class="n">₹4,702 Cr</td><td class="n">+1.0%</td><td class="n">15.7%</td><td class="n">₹476 Cr</td></tr>
+        <tr><td>FY25</td><td class="n">₹4,894 Cr</td><td class="n">+4.1%</td><td class="n">14.5%</td><td class="n">₹299 Cr</td></tr>
+        <tr><td>FY26</td><td class="n">₹5,206 Cr</td><td class="n">+6.4%</td><td class="n">11.1%</td><td class="n neg">₹168 Cr</td></tr>
+        <tr><td>TTM</td><td class="n">₹5,585 Cr</td><td class="n pos">+11.9%</td><td class="n">11.1%</td><td class="n neg">₹126 Cr</td></tr>
+        <tr><td>Q2 FY27</td><td class="n">₹1,469 Cr</td><td class="n pos">+13.2%</td><td class="n">12.5%</td><td class="n neg">₹12 Cr</td></tr>
+      </tbody>
+    </table></div>
+    <p class="mut" style="font-size:12px;margin-top:8px">FY23 not shown in the source report.</p>
+  </div>
+
+  <div class="card"><h3>Revenue vs net profit</h3><div class="chart"><canvas id="cFin"></canvas></div></div>
+
+  <div class="callout green"><b>Q2 FY27 was the turning-point quarter for operations.</b> Profit before one-offs and tax rose to ₹138.3 Cr from ₹112.5 Cr a year ago. But an ₹80 Cr one-off charge (VAW receivables, clearing-agency foreign currency, and ₹18.3 Cr of Awuko closure costs) cut reported profit to just ₹12 Cr.</div>
+
+  <div class="card">
+    <h3>Return on capital collapsed</h3>
+    <p>The profit earned on each ₹100 of capital employed (ROCE) fell from <span class="mono">20.3%</span> in FY24 to <span class="mono neg">7.0%</span> in FY26, as one-off charges of ₹104 Cr (FY25) and ₹135 Cr (FY26) hit the books.</p>
+    <p>In FY26 the Indian parent alone earned <span class="mono">₹416 Cr</span>, but the whole group earned only <span class="mono">₹168 Cr</span> — a <span class="mono neg">₹248 Cr</span> gap caused by overseas subsidiaries.</p>
+  </div>
+
+  <div class="card">
+    <h3>Growth levers (the bull case)</h3>
+    <div class="lever"><span class="tag">2x</span><p><b>Group target to double revenue</b> — the five-year plan (May 2025) implies roughly ₹11,000 Cr by FY30. "Aspiration 2030" programmes were reported on track as of Q2 FY27.</p></div>
+    <div class="lever"><span class="tag">SEMI</span><p><b>Semiconductor ceramics</b> — the Hosur facility has qualified global equipment-maker anchor customers. Management expects revenue to pick up from FY28 and peak at ₹300–350 Cr by FY30–31.</p></div>
+    <div class="lever"><span class="tag">SOFC</span><p><b>Fuel cells for data centres</b> — CUMI supplies a leading solid-oxide fuel-cell maker doubling capacity from 1 GW to 2 GW. Ceramics grew 36.1% YoY in Q2 FY27, fastest of all segments.</p></div>
+    <div class="lever"><span class="tag">EXPORT</span><p><b>Electrominerals exports</b> — standalone exports doubled in FY26 to over a third of segment sales, helped by EU anti-dumping duties on Chinese grains. Target: 40% of sales.</p></div>
+    <div class="lever"><span class="tag">EXIT</span><p><b>Closing loss-makers</b> — Awuko is in final liquidation (assets sold for ₹5.34 Cr in Oct 2026); Foskor Zirconia's exit is expected by Dec 2026. Together they address ₹100–120 Cr+ of yearly losses, lifting group profit from FY28.</p></div>
+    <div class="lever"><span class="tag">FIX</span><p><b>Rhodius turnaround</b> — Q2 FY27 loss narrowed to EUR 0.3 mn from EUR 0.7 mn the previous quarter; break-even targeted by Q1 FY28.</p></div>
+    <div class="lever"><span class="tag">CAPEX</span><p><b>Spending plan</b> — ₹400 Cr consolidated capex maintained; cash tied up in working capital expected to come back in H2 FY27.</p></div>
+  </div>
+
+  <div class="callout">The honest read: revenue growth is real and broadening, but profit recovery is a <b>FY28 story</b>. FY27 is a transition year of closures, write-downs and ramp-up spending.</div>
+</section>
+
+<!-- VALUATION -->
+<section class="panel" id="valuation">
+  <h2>Valuation: looks expensive, less so once cleaned up</h2>
+  <p class="sec-desc">How much the market pays today versus CUMI's own history and its industry.</p>
+
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Multiple</th><th>Current</th><th>3-yr median</th><th>5-yr median</th><th>Industry</th></tr></thead>
+      <tbody>
+        <tr><td>Price ÷ profit (P/E)</td><td class="n neg">133.4x</td><td class="n">61.2x</td><td class="n">51.8x</td><td class="n">75.0x</td></tr>
+        <tr><td>Business value ÷ operating profit (EV/EBITDA)</td><td class="n pos">32.0x</td><td class="n">34.3x</td><td class="n">34.3x</td><td class="n">34.0x</td></tr>
+        <tr><td>Price ÷ book value (P/B)</td><td class="n">5.0x</td><td class="n">5.3x</td><td class="n">5.3x</td><td class="n">5.3x</td></tr>
+      </tbody>
+    </table></div>
+    <p class="mut" style="font-size:12px;margin-top:8px">Market cap ₹19,802 Cr · Free-cash-flow yield 0.4%</p>
+  </div>
+
+  <div class="card"><h3>Current multiple vs history</h3><div class="chart"><canvas id="cVal"></canvas></div></div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>Why 133x is misleading</h3>
+      <p>Trailing profit of ₹126 Cr is shrunk by one-off write-downs. Adjusting for VAW impairments and Rhodius/Awuko losses (normalised earnings), the P/E falls to roughly <span class="mono amb">45–55x</span>.</p>
+    </div>
+    <div class="card">
+      <h3>What the market is really using</h3>
+      <p>On operating profit before interest, tax and depreciation (EV/EBITDA), CUMI at 32.0x trades slightly <b>below</b> its own 3- and 5-year medians (34.3x) and the industry (34.0x). The market is valuing the operations, not the damaged profit line.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Brokerage targets</h3>
+    <div class="tw"><table>
+      <thead><tr><th>Broker</th><th>Target</th><th>Call / basis</th></tr></thead>
+      <tbody>
+        <tr><td>Prabhudas Lilladher</td><td class="n">₹1,178</td><td>Accumulate · 40.6x / 34.9x FY28E / FY29E earnings · sum-of-parts: Abrasives 35x, Ceramics 41x, Electrominerals 15x (Sep'28E)</td></tr>
+        <tr><td>Monarch Networth</td><td class="n pos">₹1,563</td><td>52% upside · buying range ₹995–1,060</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="callout">The premium is a <b>bet on Ceramics</b>. Any shift in mix toward Ceramics (semiconductors, fuel cells, defence) lifts group earning power. If the turnaround stalls, the quality premium unwinds.</div>
+</section>
+
+<!-- GOVERNANCE -->
+<section class="panel" id="governance">
+  <h2>Promoter &amp; governance</h2>
+  <p class="sec-desc">Clean record, with one structural caveat created by sanctions.</p>
+
+  <div class="kpis" style="padding:0 0 12px">
+    <div class="kpi"><div class="l">Promoter (Murugappa)</div><div class="v">38.84%</div><div class="s">−0.12% YoY</div></div>
+    <div class="kpi"><div class="l">Pledged shares</div><div class="v pos">0.00%</div><div class="s">None</div></div>
+    <div class="kpi"><div class="l">Domestic funds (DII/MF)</div><div class="v">28.41%</div><div class="s">&nbsp;</div></div>
+    <div class="kpi"><div class="l">Foreign funds (FII)</div><div class="v">11.10%</div><div class="s">78%+ promoter + institutions</div></div>
+  </div>
+
+  <div class="card">
+    <h3>Audit record</h3>
+    <ul>
+      <li>Clean (unqualified) audit opinions from Price Waterhouse every year FY2021–FY2026.</li>
+      <li>Revenue recognition tested as a Key Audit Matter — no exceptions found.</li>
+      <li>No single customer above 10% of revenue in any year FY19–FY25.</li>
+    </ul>
+  </div>
+
+  <div class="callout red"><b>The caveat: VAW (Russia).</b> This sanctioned subsidiary holds <span class="mono">₹1,190.78 Cr</span> of group assets (22.5%) and <span class="mono">₹297 Cr</span> of trapped cash. It has had no independent director since February 2025; SEBI granted an exemption in June 2025, valid until VAW leaves the US sanctions (SDN) list.</div>
+
+  <div class="card">
+    <p>The FY26 impairment test's base case (40% weighting) assumes VAW is removed from the sanctions list by <b>January 2027</b>. This governance structure is shaped by geopolitics, not choice — but it needs watching.</p>
+  </div>
+</section>
+
+<!-- RISKS -->
+<section class="panel" id="risks">
+  <h2>Key risks</h2>
+  <p class="sec-desc">What could keep profits down or force more write-offs.</p>
+
+  <div class="card"><h3>One-off charges, three years running</h3><div class="chart"><canvas id="cExc"></canvas></div></div>
+
+  <div class="card">
+    <h3><span class="neg">1.</span> Russia / US sanctions — the big one</h3>
+    <p>VAW was put on the US Treasury's OFAC sanctions (SDN) list on 10 January 2025, blocking dollar/euro transactions and hitting export revenue hard. ₹104.13 Cr was written off in FY25 on trapped foreign-currency balances and export receivables; ₹360 Cr of VAW cash cannot be sent back to the group.</p>
+    <p>The goodwill test leans on de-listing by January 2027, using a 26–28% discount rate. If that slips, <span class="mono neg">₹148 Cr</span> of goodwill plus the trapped cash are at risk of further write-downs.</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="neg">2.</span> European drag</h3>
+    <p>Rhodius lost ₹45 Cr in FY26 (vs ₹0.4 Cr in FY25) and Awuko lost ₹75 Cr. Abrasives' profit margin fell from 7.0% to 4.3%. Awuko's closure is largely done, but Rhodius' recovery depends on a weak German industrial cycle.</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="neg">3.</span> Electrominerals margin squeeze</h3>
+    <p>Profit margin fell from <span class="mono">16.9%</span> (FY23) to <span class="mono neg">5.6%</span> (FY26) on sanctions, power costs and cheap imports. Power-hungry fused minerals face pressure from Chinese producers.</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="neg">4.</span> One-offs keep recurring</h3>
+    <p>₹104 Cr (FY25), ₹135 Cr (FY26), ₹80 Cr (Q2 FY27 alone) — reported earnings have been unreliable for three straight years. Group return on capital (ROCE) is 6.6% TTM, far below the historical 18–20%.</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="neg">5.</span> Cash collection slowing</h3>
+    <p>Customers take longer to pay: receivable days rose from 49 (FY23) to 62 (FY26). Cash from operations covered only 0.67x of cumulative operating profit (EBITDA) over the review window.</p>
+  </div>
+</section>
+
+<!-- MOMENTUM -->
+<section class="panel" id="momentum">
+  <h2>Chart stage: NOT in Stage 2</h2>
+  <p class="sec-desc">Weinstein stage analysis — is the share price in a healthy uptrend?</p>
+
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Test</th><th>Value</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Price vs 30-week average</td><td class="n">₹1,039.40 vs ₹1,094.18</td><td class="n neg">FAIL (below)</td></tr>
+        <tr><td>30-week avg above 40-week avg</td><td class="n">1,094.18 &gt; 1,027.29</td><td class="n pos">PASS</td></tr>
+        <tr><td>Golden cross (10W over 30W)</td><td class="n">Active, 29 weeks ago</td><td class="n pos">PASS</td></tr>
+        <tr><td>Strength vs Nifty 500 (26W)</td><td class="n">CRS −4.0</td><td class="n neg">FAIL (lagging)</td></tr>
+        <tr><td>Distance from 52-wk high</td><td class="n">−24.1% (₹1,369)</td><td class="n mut">Neutral</td></tr>
+        <tr><td>RSI (14-day)</td><td class="n">40.7</td><td class="n amb">Subdued</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="card"><h3>Price vs moving averages</h3><div class="chart"><canvas id="cMA"></canvas></div></div>
+
+  <div class="card">
+    <p>The stock closed at ₹1,039.40 — below its 20-day (₹1,079), 50-day (₹1,132), 100-day (₹1,123) and 30-week (₹1,094) averages, but still above the 200-day (₹1,013).</p>
+    <p>The long-term structure is intact (30-week above 40-week, golden cross active), but price has broken below the 30-week line and relative strength is negative. That looks like <b>Stage 3 (topping)</b> or a correction within a bigger uptrend — not Stage 2.</p>
+  </div>
+
+  <div class="callout red">Support is being tested near the 200-day average (<span class="mono">₹1,013</span>). A decisive break below risks a Stage 4 decline.</div>
+  <div class="callout green">Re-entry signal for Stage 2: reclaim <span class="mono">₹1,095+</span> on rising volume with relative strength turning positive.</div>
+
+  <div class="card"><p>On Q2 FY27 results day (2 Nov 2026) the stock rose 4.71% to ₹1,079.90 — the market rewarded the operating beat despite the profit miss.</p></div>
+</section>
+
+<!-- VERDICT -->
+<section class="panel" id="verdict">
+  <h2>Bottom line</h2>
+  <p class="sec-desc">The trade-off in one screen.</p>
+
+  <div class="grid2">
+    <div class="card" style="border-color:rgba(55,211,155,.35)">
+      <h3 class="pos">For</h3>
+      <ul>
+        <li>Murugappa promoter, spotless balance sheet (AA+/A1+, net cash parent)</li>
+        <li>20%+ margin Ceramics riding semiconductors, fuel cells, grid equipment and defence</li>
+        <li>Visible self-help: Awuko/Foskor exits, Rhodius break-even targeted Q1 FY28</li>
+      </ul>
+    </div>
+    <div class="card" style="border-color:rgba(255,89,100,.35)">
+      <h3 class="neg">Against</h3>
+      <ul>
+        <li>Three years of one-off charges</li>
+        <li>Sanctioned Russian subsidiary holding a fifth of group assets with ~₹300 Cr trapped cash</li>
+        <li>ROCE at 7% vs a historical 20%</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout">The valuation prices in the <b>recovery</b>, not current earnings.</div>
+  <div class="callout red">Technically, the stock has left Stage 2 and is consolidating near its 200-day average. A reclaim of <span class="mono">₹1,095</span> with improving relative strength would signal the next advance is resuming.</div>
+
+  <p class="foot">This is an analysis, not a buy/sell recommendation. All figures from the source deep-dive report.</p>
+</section>
+
+</main>
+
+<script>
+var C = {accent:"#f0a500",text:"#e8edf6",muted:"#8a94a6",faint:"#5a6577",border:"#17233b",red:"#ff5964",green:"#37d39b",blue:"#5aa9ff",purple:"#b48cff"};
+var drawn = {};
+
+if (window.Chart) {
+  Chart.defaults.color = C.muted;
+  Chart.defaults.borderColor = C.border;
+  Chart.defaults.font.family = "'JetBrains Mono', monospace";
+  Chart.defaults.font.size = 11;
+}
+
+function baseOpts(extra) {
+  var o = {responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{boxWidth:10}}}, scales:{x:{grid:{display:false}}, y:{grid:{color:C.border}}}};
+  if (extra) { for (var k in extra) { o[k] = extra[k]; } }
+  return o;
+}
+
+var charts = {
+  business: function () {
+    new Chart(document.getElementById("cSeg"), {
+      type: "bar",
+      data: {
+        labels: ["Abrasives","Electrominerals","Ceramics","Others"],
+        datasets: [
+          {type:"bar", label:"Revenue (₹ Cr)", data:[2271,1632,1268,175], backgroundColor:C.blue, yAxisID:"y"},
+          {type:"line", label:"PBIT margin %", data:[4.3,5.6,20.2,-1.1], borderColor:C.accent, backgroundColor:C.accent, pointRadius:5, yAxisID:"y1"}
+        ]
+      },
+      options: baseOpts({scales:{x:{grid:{display:false}}, y:{grid:{color:C.border}, title:{display:true,text:"₹ Cr"}}, y1:{position:"right", grid:{display:false}, title:{display:true,text:"Margin %"}}}})
+    });
+  },
+  growth: function () {
+    new Chart(document.getElementById("cFin"), {
+      type: "bar",
+      data: {
+        labels: ["FY22","FY24","FY25","FY26","TTM"],
+        datasets: [
+          {type:"bar", label:"Revenue (₹ Cr)", data:[3325,4702,4894,5206,5585], backgroundColor:C.blue, yAxisID:"y"},
+          {type:"line", label:"Net profit (₹ Cr)", data:[350,476,299,168,126], borderColor:C.red, backgroundColor:C.red, pointRadius:5, yAxisID:"y1"}
+        ]
+      },
+      options: baseOpts({scales:{x:{grid:{display:false}}, y:{grid:{color:C.border}, title:{display:true,text:"Revenue"}}, y1:{position:"right", grid:{display:false}, title:{display:true,text:"PAT"}}}})
+    });
+  },
+  valuation: function () {
+    new Chart(document.getElementById("cVal"), {
+      type: "bar",
+      data: {
+        labels: ["P/E","EV/EBITDA","P/B"],
+        datasets: [
+          {label:"Current", data:[133.4,32.0,5.0], backgroundColor:C.accent},
+          {label:"3-yr median", data:[61.2,34.3,5.3], backgroundColor:C.blue},
+          {label:"5-yr median", data:[51.8,34.3,5.3], backgroundColor:C.purple},
+          {label:"Industry", data:[75.0,34.0,5.3], backgroundColor:C.faint}
+        ]
+      },
+      options: baseOpts({scales:{x:{grid:{display:false}}, y:{type:"logarithmic", grid:{color:C.border}, title:{display:true,text:"Multiple (x, log scale)"}}}})
+    });
+  },
+  risks: function () {
+    new Chart(document.getElementById("cExc"), {
+      type: "bar",
+      data: {
+        labels: ["FY25","FY26","Q2 FY27 (one quarter)"],
+        datasets: [{label:"Exceptional items (₹ Cr)", data:[104,135,80], backgroundColor:[C.red,C.red,C.accent]}]
+      },
+      options: baseOpts({plugins:{legend:{display:false}}})
+    });
+  },
+  momentum: function () {
+    var price = 1039.40;
+    var labels = ["20-day","50-day","100-day","30-week","200-day"];
+    var vals = [1079,1132,1123,1094.18,1013];
+    new Chart(document.getElementById("cMA"), {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [
+          {type:"bar", label:"Moving average (₹)", data:vals, backgroundColor:vals.map(function(v){return v > price ? C.red : C.green;})},
+          {type:"line", label:"Price ₹1,039.40", data:labels.map(function(){return price;}), borderColor:C.accent, borderDash:[6,4], pointRadius:0}
+        ]
+      },
+      options: baseOpts({scales:{x:{grid:{display:false}}, y:{min:950, max:1160, grid:{color:C.border}}}})
+    });
+  }
+};
+
+function drawFor(id) {
+  if (drawn[id] || !charts[id] || !window.Chart) return;
+  drawn[id] = true;
+  charts[id]();
+}
+
+var btns = document.querySelectorAll("nav button");
+btns.forEach(function (b) {
+  b.addEventListener("click", function () {
+    var id = b.getAttribute("data-tab");
+    btns.forEach(function (x) { x.classList.toggle("active", x === b); });
+    document.querySelectorAll(".panel").forEach(function (p) { p.classList.toggle("active", p.id === id); });
+    b.scrollIntoView({behavior:"smooth", inline:"center", block:"nearest"});
+    window.scrollTo({top:0, behavior:"smooth"});
+    drawFor(id);
+  });
+});
+
+window.addEventListener("load", function () { drawFor("business"); });
+</script>
+</body>
+</html>
