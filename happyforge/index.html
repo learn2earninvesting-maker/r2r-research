@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- r2r-build:16e388e9098a4b42 -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Happy Forgings (HAPPYFORGE) — Deep Dive Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#04080f;--panel:#0a1220;--border:#17233b;--accent:#f0a500;--text:#e8edf6;--muted:#8a94a6;--faint:#5a6577;--red:#ff5964;--green:#37d39b;--blue:#5aa9ff;--purple:#b48cff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:"DM Sans",sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+nav{position:sticky;top:0;z-index:100;background:rgba(4,8,15,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none;padding:0 8px}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:0 0 auto;background:none;border:none;color:var(--muted);font-family:"JetBrains Mono",monospace;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;padding:15px 14px 13px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+nav button.active{color:var(--accent);border-bottom-color:var(--accent)}
+header{padding:22px 18px 8px;max-width:1100px;margin:0 auto}
+.ticker{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--accent);letter-spacing:.08em}
+h1{font-family:Syne,sans-serif;font-weight:800;font-size:27px;line-height:1.15;margin:6px 0 10px}
+.sub{color:var(--muted);font-size:14.5px}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}
+.badge{font-family:"JetBrains Mono",monospace;font-size:11.5px;padding:5px 10px;border-radius:999px;border:1px solid}
+.b-green{color:var(--green);border-color:rgba(55,211,155,.4);background:rgba(55,211,155,.08)}
+.b-amber{color:var(--accent);border-color:rgba(240,165,0,.4);background:rgba(240,165,0,.08)}
+.b-red{color:var(--red);border-color:rgba(255,89,100,.4);background:rgba(255,89,100,.08)}
+.b-blue{color:var(--blue);border-color:rgba(90,169,255,.4);background:rgba(90,169,255,.08)}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:12px 18px;max-width:1100px;margin:0 auto}
+@media(min-width:700px){.kpis{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.kpi .l{font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em}
+.kpi .v{font-family:"JetBrains Mono",monospace;font-size:20px;font-weight:600;margin-top:3px}
+.kpi .n{font-size:12px;color:var(--muted)}
+main{max-width:1100px;margin:0 auto;padding:8px 18px 60px}
+.panel{display:none}.panel.active{display:block}
+h2{font-family:Syne,sans-serif;font-weight:700;font-size:22px;margin:14px 0 4px}
+.desc{color:var(--muted);font-size:14px;margin-bottom:14px}
+h3{font-family:Syne,sans-serif;font-weight:700;font-size:16px;margin-bottom:8px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px}
+.card p+p{margin-top:8px}
+.card ul{padding-left:18px}.card li{margin:6px 0}
+.callout{border-left:3px solid var(--accent);background:rgba(240,165,0,.06);padding:12px 14px;border-radius:0 10px 10px 0;margin-bottom:14px;font-size:14.5px}
+.callout.red{border-color:var(--red);background:rgba(255,89,100,.06)}
+.callout.green{border-color:var(--green);background:rgba(55,211,155,.06)}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;min-width:520px;border-collapse:collapse;font-family:"JetBrains Mono",monospace;font-size:12.5px}
+th{color:var(--faint);text-align:left;font-weight:600;padding:8px;border-bottom:1px solid var(--border);text-transform:uppercase;font-size:10.5px;letter-spacing:.05em}
+td{padding:9px 8px;border-bottom:1px solid var(--border)}
+td.t{font-family:"DM Sans",sans-serif;font-size:13px;color:var(--muted)}
+.pos{color:var(--green)}.neg{color:var(--red)}.amb{color:var(--accent)}
+.chart{position:relative;height:260px}
+.grid2{display:grid;gap:14px}
+@media(min-width:900px){.grid2{grid-template-columns:1fr 1fr}nav{justify-content:center}header,.kpis{padding-left:24px;padding-right:24px}}
+.tag{display:inline-block;font-family:"JetBrains Mono",monospace;font-size:10.5px;padding:2px 7px;border-radius:5px;margin-right:6px;vertical-align:middle}
+.tag.r{background:rgba(255,89,100,.12);color:var(--red)}.tag.g{background:rgba(55,211,155,.12);color:var(--green)}.tag.b{background:rgba(90,169,255,.12);color:var(--blue)}.tag.p{background:rgba(180,140,255,.12);color:var(--purple)}.tag.a{background:rgba(240,165,0,.12);color:var(--accent)}
+.src{font-size:11.5px;color:var(--faint);margin-top:8px;font-family:"JetBrains Mono",monospace}
+.foot{color:var(--faint);font-size:12px;text-align:center;padding:20px;border-top:1px solid var(--border)}
+</style>
+</head>
+<body>
+<nav id="nav">
+  <button class="active" data-tab="overview">Overview</button>
+  <button data-tab="business">Business</button>
+  <button data-tab="growth">Growth</button>
+  <button data-tab="valuation">Valuation</button>
+  <button data-tab="promoter">Promoter</button>
+  <button data-tab="risks">Risks</button>
+  <button data-tab="technicals">Technicals</button>
+</nav>
+
+<header>
+  <div class="ticker">NSE: HAPPYFORGE · AUTO & INDUSTRIAL FORGINGS</div>
+  <h1>Happy Forgings Ltd — Deep Dive</h1>
+  <p class="sub">A precision auto-parts forger moving up into ultra-heavy industrial components (power, data centres, wind, marine) — growing faster with strong margins and a clean balance sheet, but the share price already assumes the expansion works.</p>
+  <div class="badges">
+    <span class="badge b-green">Q2 FY27 revenue +32.7% YoY</span>
+    <span class="badge b-green">CRISIL AA / ICRA AA</span>
+    <span class="badge b-amber">Expensive: 50.5x P/E vs 36.8x median</span>
+    <span class="badge b-blue">Weinstein Stage 2 · in correction</span>
+  </div>
+</header>
+
+<section class="kpis">
+  <div class="kpi"><div class="l">Price</div><div class="v">₹1,881</div><div class="n">−23.8% from 52W high</div></div>
+  <div class="kpi"><div class="l">Market cap</div><div class="v">₹17,758 Cr</div><div class="n">1Y return +81.6%</div></div>
+  <div class="kpi"><div class="l">P/E (trailing)</div><div class="v amb">50.5x</div><div class="n">Median 36.8x</div></div>
+  <div class="kpi"><div class="l">EBITDA margin (TTM)</div><div class="v pos">31.0%</div><div class="n">D/E 0.23x · ROCE 17.1%</div></div>
+</section>
+
+<main>
+<!-- OVERVIEW -->
+<section class="panel active" id="overview">
+  <h2>The one-screen view</h2>
+  <p class="desc">What the company is, what's changing, and the report's verdict.</p>
+  <div class="callout">Happy Forgings is stepping up from automotive parts into very heavy industrial parts through a ₹650 Cr heavy-forging plant plus a newly approved ₹500 Cr expansion. Sales grew 32.7% in Q2 FY27, and profit before interest, tax and depreciation has stayed above 30% of sales (EBITDA margin) for four straight quarters.</div>
+  <div class="grid2">
+    <div class="card"><h3>What's strong</h3><ul>
+      <li>Margins of ~30–31% — roughly double a typical auto-parts peer (15–18%).</li>
+      <li>Low debt: borrowings are only 0.23x of shareholder equity (D/E), with AA credit ratings.</li>
+      <li>Growth has sped up every quarter: +10.4% → +20.4% → +27.0% → +32.7% YoY.</li>
+      <li>Orders already signed for the new heavy products (~₹180 Cr crankshafts, ~₹300 Cr data-centre engine parts).</li>
+    </ul></div>
+    <div class="card"><h3>What to watch</h3><ul>
+      <li>The stock costs 50.5x its earnings vs a 36.8x historical median — the expansion is already priced in.</li>
+      <li>Cash left after capex (free cash flow) was slightly negative in FY26 (−₹9 Cr).</li>
+      <li>The heavy-forging revenue mostly arrives in FY28–FY29, and its start date has already slipped once.</li>
+      <li>Exports to US/Europe trucks and tractors remain soft.</li>
+    </ul></div>
+  </div>
+  <div class="card"><h3>Bottom line (from the report)</h3>
+    <p>Happy Forgings pairs sector-leading ~30% EBITDA margins and AA-rated balance-sheet strength with a credible, order-backed path into ultra-heavy…</p>
+    <p class="src">NOTE: The source report's bottom-line paragraph is cut off at this point. The rest is NOT DISCLOSED in the uploaded file.</p>
+  </div>
+</section>
+
+<!-- BUSINESS -->
+<section class="panel" id="business">
+  <h2>Business & segments</h2>
+  <p class="desc">What it makes, who buys it, and why rivals find it hard to copy.</p>
+  <div class="card"><p>Founded in 1979 in Ludhiana as a bicycle-pedal maker, Happy Forgings is now India's fourth-largest engineering-led maker of heavy forged and precision-machined parts — crankshafts, front axle beams, steering knuckles and differential cases for trucks, tractors and industrial equipment. One integrated platform serves five end-markets.</p></div>
+  <div class="card"><h3>Revenue mix: FY26 vs H1 FY27</h3><div class="chart"><canvas id="segChart"></canvas></div>
+  <div class="tw" style="margin-top:12px"><table>
+    <tr><th>Segment</th><th>FY26</th><th>H1 FY27</th><th>Read</th></tr>
+    <tr><td>Commercial Vehicles</td><td>37%</td><td>~33%</td><td class="t">Cash cow; domestic strong, exports soft</td></tr>
+    <tr><td>Farm Equipment</td><td>32%</td><td>~32%</td><td class="t">Mid-teens FY26 growth; rural stabiliser</td></tr>
+    <tr><td>Industrials</td><td>14%</td><td>16%</td><td class="t">Fastest-growing; grew &gt;50% YoY</td></tr>
+    <tr><td>Off-Highway</td><td>11%</td><td>12%</td><td class="t">Recovering with construction capex</td></tr>
+    <tr><td>Passenger Vehicles</td><td>6%</td><td>9%</td><td class="t">Nearly doubled YoY; new frontier</td></tr>
+  </table></div></div>
+  <div class="callout green">Diversification is deliberate: trucks (CV) fell from over 42% of revenue two years ago to 37% in FY26 — not because trucks shrank, but because other segments grew faster. That makes the business less tied to one cycle.</div>
+  <div class="grid2">
+    <div class="card"><h3><span class="tag p">STRUCTURAL</span>Industrials</h3><p>Grew from ~2% of revenue in FY21 to 14% in FY26 — large crankshafts for heavy generator sets and pinions for wind-turbine gearboxes. Management sees it reaching roughly 30% of revenue over time.</p></div>
+    <div class="card"><h3><span class="tag b">SCALING</span>Passenger Vehicles</h3><p>From 0.9% of revenue in FY24 to 9% in H1 FY27, including a seven-year US electric-SUV contract (machined axle seats, steering knuckles) running to FY32. Gross margins here exceed 70%.</p></div>
+    <div class="card"><h3>More value per tonne</h3><p>Machined (finished, ready-to-fit) products made up 90% of H1 FY27 revenue vs 88% in FY26 — the company captures more of the value chain.</p></div>
+    <div class="card"><h3>Exports</h3><p>Direct exports were 19% of revenue in H1 FY25; direct + deemed + indirect exports are roughly a quarter of finished-goods sales. H1 FY27 exports contributed 28% of revenue.</p></div>
+  </div>
+  <div class="card"><h3>The moat: big presses, micron-level machining, integrated plants</h3><ul>
+    <li><b>Press fleet few can match:</b> a 14,000-tonne press (only the second company in India with one that size), three 8,000-tonne presses, a new 10,000-tonne press and ten hammers — forging parts from 3 kg to 250 kg today.</li>
+    <li><b>Precision:</b> tolerances as fine as 5 microns using Landis and Junker equipment and 5-axis machining centres.</li>
+    <li><b>Capacity:</b> 158,000 MT forging and 82,000 MT machining across Kanganwal and Dugri.</li>
+  </ul></div>
+  <div class="card"><h3>How full are the plants? (H1 FY27 utilisation)</h3><div class="chart" style="height:170px"><canvas id="utilChart"></canvas></div>
+  <p class="src">Forging spare room is deliberate; machining is nearing its peak — which triggered the new ₹500 Cr capex.</p></div>
+</section>
+
+<!-- GROWTH -->
+<section class="panel" id="growth">
+  <h2>Growth & catalysts</h2>
+  <p class="desc">The financial track record and the five things that could drive the next leg.</p>
+  <div class="card"><h3>Revenue & EBITDA (₹ Cr) with margin</h3><div class="chart" style="height:290px"><canvas id="finChart"></canvas></div></div>
+  <div class="card"><div class="tw"><table>
+    <tr><th>Period</th><th>Revenue</th><th>Growth</th><th>EBITDA</th><th>OPM</th><th>PAT</th><th>ROCE</th></tr>
+    <tr><td>FY22</td><td>860</td><td class="pos">+47.0%</td><td>269</td><td>26.9%</td><td>142</td><td>19.4%</td></tr>
+    <tr><td>FY23</td><td>1,197</td><td class="pos">+39.1%</td><td>395</td><td>28.5%</td><td>209</td><td>24.2%</td></tr>
+    <tr><td>FY24</td><td>1,358</td><td class="pos">+13.5%</td><td>452</td><td>28.5%</td><td>243</td><td>19.1%</td></tr>
+    <tr><td>FY25</td><td>1,409</td><td class="amb">+3.7%</td><td>484</td><td>28.9%</td><td>267</td><td>17.7%</td></tr>
+    <tr><td>FY26</td><td>1,546</td><td class="pos">+9.8%</td><td>560</td><td>30.4%</td><td>302</td><td>16.8%</td></tr>
+    <tr><td>TTM</td><td>1,765</td><td class="pos">+22.8%</td><td>649</td><td>31.0%</td><td>351</td><td>17.1%</td></tr>
+    <tr><td>Q2 FY27</td><td>501</td><td class="pos">+32.7%</td><td>181</td><td>30.6%</td><td>98</td><td>—</td></tr>
+  </table></div><p class="src">₹ Cr. OPM = operating profit margin (EBITDA ÷ revenue). PAT = net profit. ROCE = return on capital employed.</p></div>
+  <div class="callout">The pattern: a boom in FY22–23, a flat FY25 (global truck and farm downturn, export customers cutting stock), then re-acceleration into FY27 from domestic demand, passenger vehicles and industrials. Management guides to meeting or beating its FY27 volume growth guidance.</div>
+  <div class="card"><h3>Quarterly YoY revenue growth</h3><div class="chart" style="height:220px"><canvas id="qChart"></canvas></div></div>
+
+  <div class="card"><h3><span class="tag a">#1 · THE BIG ONE</span>₹650 Cr Dugri heavy-forging expansion</h3><ul>
+    <li><b>What:</b> one of the world's largest forging hammers (125T) plus an 8,000T vertical upsetter — 59,000 MT of new capacity for parts weighing 300 kg to 3 tonnes, for power generation (incl. data-centre backup power), marine, mining, high-HP tractors, wind and oil & gas.</li>
+    <li><b>When:</b> operations start FY28, revenue "largely from FY '29". Plant plus 20 MW captive solar expected complete by Q4 FY28.</li>
+    <li><b>Orders:</b> ~₹180 Cr signed on large crankshafts (as of Q3 FY26); ~₹300 Cr secured for a dedicated data-centre heavy-engine machining line, contract to 2033. More OEM orders expected early FY28.</li>
+    <li><b>Economics:</b> single large products can bring ₹100–150 Cr of revenue; asset turns (revenue ÷ assets) of 1–1.2x achievable by 2030.</li>
+  </ul></div>
+  <div class="card"><h3><span class="tag a">#2</span>₹500 Cr additional capex (approved Nov 2026)</h3><p>Spread over FY28–FY29, funded by debt and internal cash, ~70% for machining. Takes total capacity to ~217,000 MT forging and 116,000 MT machining within 2–2.5 years. Trigger: "strong demand visibility, healthy order books, and existing capacity utilisation nearing their peak".</p></div>
+  <div class="card"><h3><span class="tag a">#3</span>₹950 Cr incremental order book</h3><p>Peak extra annual revenue, delivered over 2–3 years with 80–85% by FY28, led by exports, PV and Industrials. Price earned per kg on this book is ₹340–350 vs ₹240–245 today — a richer mix that should lift margins.</p></div>
+  <div class="card"><h3><span class="tag a">#4</span>PV ramp & domestic share gains</h3><p>PV revenue nearly doubled YoY in H1 FY27; a 4,000-ton press line for a North American client starts booking revenue from Q3 FY27; target 12–15% of revenue in 3–4 years. Farm-equipment customer share (wallet share) is ~46%; CV share on medium/heavy trucks expected to rise from 32% to 42%.</p></div>
+  <div class="card"><h3><span class="tag a">#5</span>Cost side: captive solar</h3><p>~33 MW Muktsar solar plant is ~90% built, starting Q4 FY27 — cutting power cost by ~₹30 Cr a year (~1.5% margin uplift).</p></div>
+  <div class="callout red">Caveat: the heavy-forging step-up is an FY28–FY29 story. FY27 growth rests on the existing plants, whose export leg remains soft — European truck orders showed only "slight improvement, not much" as of Q3 FY26.</div>
+</section>
+
+<!-- VALUATION -->
+<section class="panel" id="valuation">
+  <h2>Valuation: priced for the FY28 story</h2>
+  <p class="desc">How expensive the stock is versus its own history and its industry.</p>
+  <div class="card"><h3>Current multiple vs historical median</h3><div class="chart"><canvas id="valChart"></canvas></div></div>
+  <div class="card"><div class="tw"><table>
+    <tr><th>Multiple</th><th>Current</th><th>3-Yr median</th><th>5-Yr median</th><th>Industry</th></tr>
+    <tr><td>P/E</td><td class="amb">50.5x</td><td>36.8x</td><td>36.8x</td><td>36.8x</td></tr>
+    <tr><td>EV/EBITDA</td><td class="amb">32.1x</td><td>31.2x</td><td>31.2x</td><td>27.0x</td></tr>
+    <tr><td>P/B</td><td class="amb">7.8x</td><td>6.9x</td><td>6.9x</td><td>4.2x</td></tr>
+  </table></div>
+  <p class="src">P/E = price ÷ earnings per share. EV/EBITDA = whole-company value ÷ operating profit. P/B = price ÷ book value.</p></div>
+  <div class="kpis" style="padding:0;margin-bottom:14px">
+    <div class="kpi"><div class="l">PEG</div><div class="v amb">2.55</div><div class="n">P/E ÷ growth</div></div>
+    <div class="kpi"><div class="l">FCF yield</div><div class="v neg">−0.1%</div><div class="n">Free cash ÷ mkt cap</div></div>
+    <div class="kpi"><div class="l">Market cap</div><div class="v">₹17,758 Cr</div><div class="n">&nbsp;</div></div>
+    <div class="kpi"><div class="l">1Y return</div><div class="v pos">+81.6%</div><div class="n">&nbsp;</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3><span class="tag g">FOR</span>The premium has a quality basis</h3><p>~30–31% margins are about double the typical auto-parts peer (15–18%), with ~17% ROCE and a balance sheet close to net cash (D/E 0.23x).</p></div>
+    <div class="card"><h3><span class="tag r">AGAINST</span>The multiple assumes execution</h3><p>At 50.5x vs a 36.8x median, buyers are paying today for the ₹650 Cr + ₹500 Cr capex cycle to deliver. Negative FCF (FY26: −₹9 Cr on ₹455 Cr capex) and a PEG of 2.55 leave little cushion if Dugri ramps slowly.</p></div>
+  </div>
+  <div class="callout">The re-rating has largely happened: the +81.6% one-year return has outrun even the strong earnings pickup — TTM profit growth of ~22.8% trails the expansion in the P/E.</div>
+</section>
+
+<!-- PROMOTER -->
+<section class="panel" id="promoter">
+  <h2>Promoter & governance</h2>
+  <p class="desc">Who owns it, how the family runs it, and where shareholders have pushed back.</p>
+  <div class="card"><h3>Shareholding (Sept 2026 quarter)</h3><div class="chart" style="height:230px"><canvas id="shChart"></canvas></div>
+  <p class="src">Promoter 78.44% (78.54% a year earlier) · zero pledged shares.</p></div>
+  <div class="callout green">Skin in the game is unambiguous: near-total promoter ownership, no shares pledged as loan collateral, and 92% of the ₹1,393 Cr capex programme funded from the company's own cash.</div>
+  <div class="grid2">
+    <div class="card"><h3>Structure</h3><p>A single listed operating company with one dormant wholly owned subsidiary (HFL Technologies, incorporated March 2024, not yet operating). No questionable group entities.</p></div>
+    <div class="card"><h3>Family interlock</h3><p>Chairman & MD Paritosh Kumar (founder) is the father of MD Ashish Garg; Whole-Time Director Megha Garg is Ashish Garg's wife.</p></div>
+  </div>
+  <div class="card"><h3><span class="tag r">WATCH</span>Governance friction</h3><ul>
+    <li>Continuing Paritosh Kumar as Chairman & MD beyond age 70 drew <b>21.15%</b> of public institutional votes against (July 2025 AGM).</li>
+    <li>The employee stock option (ESOP) ratification drew <b>35.13%</b> against in 2024.</li>
+    <li>Minor: ₹14,160 fines each from BSE/NSE for a six-day gap in the Nomination & Remuneration Committee; an Audit Committee warning for an inadvertent contra trade.</li>
+  </ul></div>
+</section>
+
+<!-- RISKS -->
+<section class="panel" id="risks">
+  <h2>Risks</h2>
+  <p class="desc">Strong credit profile, but exposed to cycles and to delivering the capex on time.</p>
+  <div class="card"><h3><span class="tag g">CREDIT</span>Best-in-class for a standalone company</h3><p>CRISIL AA/Stable reaffirmed on ₹485 Cr of bank facilities (Sep 2025); ICRA AA (Stable) / A1+ reaffirmed (Jul 2026). Both upgraded from AA− in early 2024 — among the strongest ratings for a company this size without a big-group parent.</p></div>
+  <div class="card"><h3>Debt is rising, but still modest (₹ Cr)</h3><div class="chart" style="height:200px"><canvas id="debtChart"></canvas></div>
+  <p class="src">Borrowings ₹143 Cr (FY24) → ₹529 Cr (TTM). Intermediate years NOT DISCLOSED in the report. D/E 0.23x.</p></div>
+  <div class="card"><h3><span class="tag r">HIGH</span>Domestic cyclicality</h3><p>Trucks + farm equipment are ~65–70% of revenue, so volumes follow the heavy-truck cycle and monsoon/rural incomes. FY25 proved it: revenue grew just 3.7% when global truck and farm markets fell.</p></div>
+  <div class="card"><h3><span class="tag r">HIGH</span>Capex execution</h3><p>The 125T hammer is brand-new equipment for the company. Timing language slipped from "production commencing by end of FY27" to operations commencing FY28, with revenue "largely from FY '29".</p></div>
+  <div class="card"><h3><span class="tag a">MEDIUM</span>Export & tariff exposure</h3><p>US and European truck and tractor demand stayed weak through FY26, with tariff uncertainty adding to customer destocking. Management is awaiting "further clarity on the fine prints" of India–US trade developments.</p></div>
+  <div class="card"><h3><span class="tag a">MEDIUM</span>Capital intensity & cash flow</h3><p>FY26 capex ₹455 Cr vs operating cash flow ₹445 Cr (FCF −₹9 Cr). FY27 capex guidance ~₹400 Cr ex-solar (~₹480 Cr incl. solar), plus the new ₹500 Cr programme.</p></div>
+  <div class="card"><h3><span class="tag a">MEDIUM</span>Customer concentration</h3><p>Top 10 customers are 68% of revenue; one customer exceeds 10%. Steel-price increases are passed on, but other cost inflation is still being negotiated with customers.</p></div>
+  <div class="card"><h3><span class="tag b">LOW</span>Governance & contingent liabilities</h3><p>Institutional dissent at two consecutive AGMs (see Promoter tab). ₹99.15 Cr of disputed tax matters with no provision made (FY24 disclosure).</p></div>
+</section>
+
+<!-- TECHNICALS -->
+<section class="panel" id="technicals">
+  <h2>Stock momentum: Weinstein stage analysis</h2>
+  <p class="desc">Is the long-term price trend still up? Using Stan Weinstein's weekly-chart framework.</p>
+  <div class="callout green"><b>Verdict: Stage 2 (Advancing), in an intermediate correction.</b> All structural uptrend tests pass. The fall from the high is a pullback, not a change of stage.</div>
+  <div class="card"><h3>Price vs key moving averages (₹)</h3><div class="chart" style="height:240px"><canvas id="maChart"></canvas></div>
+  <p class="src">Moving average (SMA/DMA) = average closing price over the period.</p></div>
+  <div class="card"><div class="tw"><table>
+    <tr><th>Criterion</th><th>Reading</th><th>Verdict</th></tr>
+    <tr><td>Price &gt; 30-week SMA</td><td>₹1,881 vs ₹1,736</td><td class="pos">PASS</td></tr>
+    <tr><td>30W SMA &gt; 40W SMA, rising</td><td>₹1,736 vs ₹1,620</td><td class="pos">PASS</td></tr>
+    <tr><td>Golden cross (10W/30W)</td><td>61 weeks since cross</td><td class="pos">PASS</td></tr>
+    <tr><td>Rel. strength vs Nifty 500</td><td>26W +57; 12M +14</td><td class="pos">PASS</td></tr>
+    <tr><td>Distance from 52W low</td><td>+89.8%</td><td class="pos">PASS</td></tr>
+    <tr><td>Distance from 52W high</td><td>−23.8%</td><td class="amb">Correction</td></tr>
+  </table></div></div>
+  <div class="card"><p>Price holds well above the 200-day average (₹1,588) and the 30-week average. It is below the 50-day average (₹1,987), so short-term momentum is negative while the weekly uptrend stays intact.</p></div>
+  <div class="callout red"><b>Watch point:</b> a decisive break below the rising 30-week average (~₹1,736) on heavy volume would be the first warning of a Stage 3 top. Until then, this is Stage 2 consolidation within a bull trend.</div>
+</section>
+</main>
+<div class="foot">View of the uploaded Happy Forgings deep-dive report · No figures added beyond the source · Education only, not investment advice</div>
+
+<script>
+var C = {accent:"#f0a500",text:"#e8edf6",muted:"#8a94a6",faint:"#5a6577",border:"#17233b",red:"#ff5964",green:"#37d39b",blue:"#5aa9ff",purple:"#b48cff"};
+if (window.Chart) {
+  Chart.defaults.color = C.muted;
+  Chart.defaults.font.family = "JetBrains Mono, monospace";
+  Chart.defaults.font.size = 11;
+  Chart.defaults.borderColor = C.border;
+}
+var drawn = {};
+var charts = {
+  business: function () {
+    new Chart(document.getElementById("segChart"), {type:"bar", data:{labels:["CV","Farm","Industrials","Off-Hwy","PV"], datasets:[
+      {label:"FY26 %", data:[37,32,14,11,6], backgroundColor:C.faint, borderRadius:4},
+      {label:"H1 FY27 %", data:[33,32,16,12,9], backgroundColor:C.accent, borderRadius:4}]},
+      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:"bottom"}}, scales:{y:{beginAtZero:true, ticks:{callback:function(v){return v+"%";}}}}}});
+    new Chart(document.getElementById("utilChart"), {type:"bar", data:{labels:["Forging","Machining"], datasets:[
+      {label:"Utilisation %", data:[60,77], backgroundColor:[C.blue,C.accent], borderRadius:4}]},
+      options:{indexAxis:"y", responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{min:0,max:100, ticks:{callback:function(v){return v+"%";}}}}}});
+  },
+  growth: function () {
+    new Chart(document.getElementById("finChart"), {type:"bar", data:{labels:["FY22","FY23","FY24","FY25","FY26","TTM"], datasets:[
+      {type:"bar", label:"Revenue", data:[860,1197,1358,1409,1546,1765], backgroundColor:C.faint, borderRadius:4, yAxisID:"y"},
+      {type:"bar", label:"EBITDA", data:[269,395,452,484,560,649], backgroundColor:C.accent, borderRadius:4, yAxisID:"y"},
+      {type:"line", label:"OPM %", data:[26.9,28.5,28.5,28.9,30.4,31.0], borderColor:C.green, backgroundColor:C.green, tension:.3, yAxisID:"y1"}]},
+      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:"bottom"}}, scales:{y:{beginAtZero:true}, y1:{position:"right", min:24, max:33, grid:{drawOnChartArea:false}, ticks:{callback:function(v){return v+"%";}}}}}});
+    new Chart(document.getElementById("qChart"), {type:"line", data:{labels:["Q3 FY26","Q4 FY26","Q1 FY27","Q2 FY27"], datasets:[
+      {label:"YoY revenue growth %", data:[10.4,20.4,27.0,32.7], borderColor:C.accent, backgroundColor:"rgba(240,165,0,.15)", fill:true, tension:.3, pointRadius:4}]},
+      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, ticks:{callback:function(v){return v+"%";}}}}}});
+  },
+  valuation: function () {
+    new Chart(document.getElementById("valChart"), {type:"bar", data:{labels:["P/E","EV/EBITDA","P/B"], datasets:[
+      {label:"Current", data:[50.5,32.1,7.8], backgroundColor:C.accent, borderRadius:4},
+      {label:"3/5-Yr median", data:[36.8,31.2,6.9], backgroundColor:C.faint, borderRadius:4},
+      {label:"Industry", data:[36.8,27.0,4.2], backgroundColor:C.blue, borderRadius:4}]},
+      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:"bottom"}}, scales:{y:{beginAtZero:true, ticks:{callback:function(v){return v+"x";}}}}}});
+  },
+  promoter: function () {
+    new Chart(document.getElementById("shChart"), {type:"doughnut", data:{labels:["Promoter 78.44%","DIIs 14.93%","Public 4.26%","FIIs 2.37%"], datasets:[
+      {data:[78.44,14.93,4.26,2.37], backgroundColor:[C.accent,C.blue,C.purple,C.green], borderColor:"#0a1220", borderWidth:2}]},
+      options:{responsive:true, maintainAspectRatio:false, cutout:"62%", plugins:{legend:{position:"right"}}}});
+  },
+  risks: function () {
+    new Chart(document.getElementById("debtChart"), {type:"bar", data:{labels:["FY24","TTM"], datasets:[
+      {label:"Borrowings (₹ Cr)", data:[143,529], backgroundColor:[C.faint,C.red], borderRadius:4}]},
+      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}});
+  },
+  technicals: function () {
+    new Chart(document.getElementById("maChart"), {type:"bar", data:{labels:["50-DMA","Price","30W SMA","40W SMA","200-DMA"], datasets:[
+      {label:"₹", data:[1987,1881,1736,1620,1588], backgroundColor:[C.red,C.accent,C.green,C.green,C.green], borderRadius:4}]},
+      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{min:1400}}}});
+  }
+};
+function showTab(id, btn) {
+  document.querySelectorAll(".panel").forEach(function (p) { p.classList.toggle("active", p.id === id); });
+  document.querySelectorAll("#nav button").forEach(function (b) { b.classList.toggle("active", b === btn); });
+  btn.scrollIntoView({behavior:"smooth", inline:"center", block:"nearest"});
+  window.scrollTo({top:0, behavior:"smooth"});
+  if (!drawn[id] && charts[id] && window.Chart) { drawn[id] = true; charts[id](); }
+}
+document.querySelectorAll("#nav button").forEach(function (b) {
+  b.addEventListener("click", function () { showTab(b.getAttribute("data-tab"), b); });
+});
+</script>
+</body>
+</html>
